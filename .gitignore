@@ -1,3 +1,5 @@
 .python-version
 .vscode/settings.json
 data/
+__pycache__/
+weights/vgg16_reducedfc.pth
