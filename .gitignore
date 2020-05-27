@@ -3,3 +3,4 @@
 data/
 __pycache__/
 weights/vgg16_reducedfc.pth
+.vscode/launch.json
