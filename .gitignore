@@ -4,3 +4,4 @@ data/
 __pycache__/
 weights/vgg16_reducedfc.pth
 .vscode/launch.json
+weights/ssd300_COCO_5000.pth
