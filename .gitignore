@@ -1,6 +1,10 @@
 .python-version
 .vscode/settings.json
-data/
+data/*
+!data/scripts/
+!data/__init__.py
+!data/config.py
+!voc0712.py
 __pycache__/
 weights/vgg16_reducedfc.pth
 .vscode/launch.json
