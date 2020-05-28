@@ -108,8 +108,9 @@ def train():
         print('Loading base network...')
         ssd_net.vgg.load_state_dict(vgg_weights)
 
-    if args.cuda:
-        net = net.cuda()
+    if torch.cuda.is_available():
+        if args.cuda:
+            net = net.cuda()
 
     if not args.resume:
         print('Initializing weights...')
