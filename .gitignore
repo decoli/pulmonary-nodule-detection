@@ -12,3 +12,5 @@ weights/ssd300_COCO_5000.pth
 weights/ssd300_mAP_77.43_v2.pth
 ssd300_120000/test/detections.pkl
 test.txt
+weights/ssd_300_VOC0712.pth
+eval/test1.txt
