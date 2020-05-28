@@ -53,6 +53,9 @@ parser.add_argument('--save_folder', default='weights/',
                     help='Directory for saving checkpoint models')
 args = parser.parse_args()
 
+if args.visdom:
+    import visdom
+    viz = visdom.Visdom()
 
 if torch.cuda.is_available():
     if args.cuda:
@@ -89,9 +92,6 @@ def train():
                                transform=SSDAugmentation(cfg['min_dim'],
                                                          MEANS))
 
-    if args.visdom:
-        import visdom
-        viz = visdom.Visdom()
 
     ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
     net = ssd_net
