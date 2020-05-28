@@ -431,7 +431,12 @@ if __name__ == '__main__':
     # load net
     num_classes = len(labelmap) + 1                      # +1 for background
     net = build_ssd('test', 300, num_classes)            # initialize SSD
-    net.load_state_dict(torch.load(args.trained_model))
+
+    if torch.cuda.is_available():
+        net.load_state_dict(torch.load(args.trained_model))
+    else:
+        net.load_state_dict(torch.load(args.trained_model, map_location=torch.device('cpu')))
+
     net.eval()
     print('Finished loading model!')
     # load data
