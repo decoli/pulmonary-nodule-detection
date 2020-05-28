@@ -10,3 +10,5 @@ weights/vgg16_reducedfc.pth
 .vscode/launch.json
 weights/ssd300_COCO_5000.pth
 weights/ssd300_mAP_77.43_v2.pth
+ssd300_120000/test/detections.pkl
+test.txt
