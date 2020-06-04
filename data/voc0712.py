@@ -127,7 +127,9 @@ class VOCDetection(data.Dataset):
         height, width, channels = img.shape
 
         # debug
-        cv2.imwrite('test/pull_item.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+        cv2.imwrite('test/pull_item_1.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+        img_original = img
 
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
@@ -135,11 +137,15 @@ class VOCDetection(data.Dataset):
         if self.transform is not None:
             target = np.array(target)
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+
+            # debug
+            cv2.imwrite('test/pull_item_2.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
             # to rgb
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        return torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        return img_original, torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 
     def pull_image(self, index):
