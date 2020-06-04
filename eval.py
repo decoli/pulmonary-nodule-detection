@@ -412,6 +412,15 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                                                  copy=False)
             all_boxes[j][i] = cls_dets
 
+            if args.debug:
+                x_save = cv2.cvtColor(x.squeeze().permute(1, 2, 0).cpu().numpy(), cv2.COLOR_BGR2RGB)
+                cv2.imwrite('test/test.png', x_save, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                cv2.imwrite('test/test.jpg', x_save, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+                print(boxes[:, 0])
+                print(boxes[:, 1])
+                print(boxes[:, 2])
+                print(boxes[:, 3])
+
         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time))
 

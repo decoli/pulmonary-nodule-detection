@@ -15,3 +15,4 @@ test.txt
 weights/ssd_300_VOC0712.pth
 eval/test1.txt
 ssd300_120000/test/
+test/
