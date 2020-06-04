@@ -126,6 +126,9 @@ class VOCDetection(data.Dataset):
         img = cv2.imread(self._imgpath % img_id)
         height, width, channels = img.shape
 
+        # debug
+        cv2.imwrite('test/pull_item.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
 
