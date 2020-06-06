@@ -54,6 +54,10 @@ parser.add_argument('--debug',
                     action='store_true',
                     help='small data for debug.'
                     )
+parser.add_argument('--only_best_pred',
+                    action='store_true',
+                    help='only draw the best pred box.'
+                    )
 
 args = parser.parse_args()
 
@@ -416,12 +420,17 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                 cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-                for k in range(boxes.shape[0]):
+                # flag: only draw the best pred box
+                if args.only_best_pred:
+                    num_draw_box = 1
+                else:
+                    num_draw_box = boxes.shape[0]
+
+                for k in range(num_draw_box):
                     point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
                     point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
 
                     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                    
                     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                     cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
