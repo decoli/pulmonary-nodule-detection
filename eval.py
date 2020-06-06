@@ -58,6 +58,10 @@ parser.add_argument('--only_best_pred',
                     action='store_true',
                     help='only draw the best pred box.'
                     )
+parser.add_argument('--pred_threshold',
+                    default=0.0,
+                    type=float,
+                    help='set the threshold of pred boxes to draw')
 
 args = parser.parse_args()
 
@@ -427,12 +431,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     num_draw_box = boxes.shape[0]
 
                 for k in range(num_draw_box):
-                    point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
-                    point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
+                    if args.pred_threshold < scores[k]:
+                        point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
+                        point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
 
-                    cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                    cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-                    cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+                        cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                        cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                        cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time))
