@@ -424,14 +424,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                 cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-                # flag: only draw the best pred box
-                if args.only_best_pred:
+                if args.only_best_pred: # flag: only draw the best pred box
                     num_draw_box = 1
                 else:
                     num_draw_box = boxes.shape[0]
 
                 for k in range(num_draw_box):
-                    if args.pred_threshold < scores[k]:
+                    if args.pred_threshold < scores[k]: # set threshold for draw boxes
                         point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
                         point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
 
