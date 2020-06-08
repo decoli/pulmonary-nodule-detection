@@ -1,15 +1,21 @@
-import SimpleITK as sitk  # 医疗图片处理包
-import numpy as np
 import csv
-import os
-from PIL import Image
-import matplotlib.pyplot as plt
 import glob
+import os
+from glob import glob
+
+import matplotlib.pyplot as plt
+import numpy as np
+import SimpleITK as sitk  # 医疗图片处理包
+from PIL import Image
+
+from skimage import measure, morphology
+from skimage.transform import resize
+from sklearn.cluster import KMeans
 
 path_working = 'G:\lung_image\\all_LUNA16\\LUNA16'
 cand_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\candidates.csv'
 anno_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\annotations.csv'
-list_img_path= glob.glob(os.path.join(path_working, '*', '*.mhd'), recursive=True)
+list_img_path= glob(os.path.join(path_working, '*', '*.mhd'), recursive=True)
 
 
 for img_path in list_img_path:
@@ -28,6 +34,7 @@ for img_path in list_img_path:
 
     slice = 60
     image = np.squeeze(numpyImage[slice, ...])  # if the image is 3d, the slice is integer
+    image_original = image
     plt.imshow(image,cmap='gray')
     plt.show()
 
@@ -56,3 +63,14 @@ for img_path in list_img_path:
     worldCoord = np.asarray([float(cand[1]),float(cand[2]),float(cand[3])])
     voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
     print(voxelCoord)
+
+    # 由于肺部与周围组织颜色对比明显，考虑通过聚类的方法找到可区分肺区域和非肺区域的阈值，实现二值化。
+    mean = np.mean(image)
+    std = np.std(image)
+    image = image-mean
+    image = image/std
+
+    f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
+    ax1.imshow(image_original,cmap='gray')
+    plt.hist(image.flatten(),bins=200)
+    plt.show()
