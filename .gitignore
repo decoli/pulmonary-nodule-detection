@@ -1,6 +1,9 @@
 .python-version
 .vscode/settings.json
 data/*
+!data/LUNA16/
+data/LUNA16/VOC
+data/LUNA16/VOC.zip
 !data/scripts/
 !data/__init__.py
 !data/config.py
