@@ -19,18 +19,40 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 
-path_working = 'G:\lung_image\\all_LUNA16\\LUNA16'
+# set path
+working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
 cand_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\candidates.csv'
 anno_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\annotations.csv'
 
+# set debug mode
 if args.debug:
-    path_working = 'data/LUNA16/sample'
+    working_path = 'data/LUNA16/sample'
     cand_path = 'data/LUNA16/candidates.csv'
     anno_path = 'data/LUNA16/annotations.csv'
 
-pd_annotation = pd.read_csv(anno_path)
-print(pd_annotation)
+# '''read csv as a list of lists'''
+# def readCSV(filename):
+#     lines = []
+#     with open(filename, "rt") as f:
+#         csvreader = csv.reader(f)
+#         for line in csvreader:
+#             lines.append(line)
+#     return lines
 
+'''convert world coordinate to real coordinate'''
+def worldToVoxelCoord(worldCoord, origin, spacing):
+    stretchedVoxelCoord = np.absolute(worldCoord - origin)
+    voxelCoord = stretchedVoxelCoord / spacing
+    return voxelCoord
+
+def load_itk_image(filename):
+    itkimage = sitk.ReadImage(filename)
+    numpyImage = sitk.GetArrayFromImage(itkimage)
+    numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
+    numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
+    return numpyImage, numpyOrigin, numpySpacing
+
+pd_annotation = pd.read_csv(anno_path)
 for each_annotation in pd_annotation.iterrows():
     seriesuid = each_annotation[1].seriesuid
     coord_x = each_annotation[1].coordX
@@ -38,52 +60,29 @@ for each_annotation in pd_annotation.iterrows():
     coord_z = each_annotation[1].coordZ
     diameter_mm = each_annotation[1].diameter_mm
 
-    name_mhd = '{}.mhd'.format(seriesuid)
-    path_mhd = glob(os.path.join(path_working, '**', name_mhd), recursive=True)[0]
+    mhd_name = '{}.mhd'.format(seriesuid)
+    mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
 
-    def load_itk_image(filename):
-        itkimage = sitk.ReadImage(filename)
-        numpyImage = sitk.GetArrayFromImage(itkimage)
-        numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
-        numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
-        return numpyImage, numpyOrigin, numpySpacing
-
-    numpyImage, numpyOrigin, numpySpacing = load_itk_image(path_mhd)
-    print(numpyImage.shape)  # 维度为(slice,w,h)
-    print(numpyOrigin)
-    print(numpySpacing)
-
-    slice = 60
-    img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
-    image_original = img
-    plt.imshow(img,cmap='gray')
-    plt.show()
-
-    '''read csv as a list of lists'''
-    def readCSV(filename):
-        lines = []
-        with open(filename, "rt") as f:
-            csvreader = csv.reader(f)
-            for line in csvreader:
-                lines.append(line)
-        return lines
-    '''convert world coordinate to real coordinate'''
-    def worldToVoxelCoord(worldCoord, origin, spacing):
-        stretchedVoxelCoord = np.absolute(worldCoord - origin)
-        voxelCoord = stretchedVoxelCoord / spacing
-        return voxelCoord
+    numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path)
+    # numpyImage.shape) 维度为(slice,w,h)
 
     # 加载结节标注
-    annos = readCSV(anno_path)  # 共1186个结节标注
-    print(len(annos))
-    print(annos[0:3])
+    # annos = readCSV(anno_path)  # 共1186个结节标注
+    # print(len(annos))
+    # print(annos[0:3])
     # 获取一个结节标注
-    cand = annos[24]  
-    print(cand)
+    # cand = annos[24]  
+    # print(cand)
     # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
-    worldCoord = np.asarray([float(cand[1]),float(cand[2]),float(cand[3])])
+    worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
     voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
     print(voxelCoord)
+ 
+    slice = int(voxelCoord[2] + 0.5)
+    img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
+    # image_original = img
+    # plt.imshow(img,cmap='gray')
+    # plt.show()
 
     # 由于肺部与周围组织颜色对比明显，考虑通过聚类的方法找到可区分肺区域和非肺区域的阈值，实现二值化。
     mean = np.mean(img)
@@ -91,10 +90,10 @@ for each_annotation in pd_annotation.iterrows():
     img = img-mean
     img = img/std
 
-    f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
-    ax1.imshow(image_original,cmap='gray')
-    plt.hist(img.flatten(),bins=200)
-    plt.show()
+    # f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
+    # ax1.imshow(image_original,cmap='gray')
+    # plt.hist(img.flatten(),bins=200)
+    # plt.show()
 
     # Kmean
     #提取肺部大致均值
