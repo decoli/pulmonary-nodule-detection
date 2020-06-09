@@ -4,6 +4,7 @@ import glob
 import os
 from glob import glob
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -162,6 +163,19 @@ for each_annotation in pd_annotation.iterrows():
         mask = mask + np.where(labels==N,1,0)
     mask = morphology.dilation(mask,np.ones([10,10])) # one last dilation
     #imgs_to_process[i] = mask
+
+    point_left = int(voxelCoord[0] + 0.5) - 16
+    point_up = int(voxelCoord[1] + 0.5) - 16
+    point_left_up = (int(point_left), int(point_up))
+
+    point_right = int(voxelCoord[0] + 0.5) + 16
+    point_down = int(voxelCoord[1] + 0.5) + 16
+    point_right_down = (int(point_right), int(point_down))
+
+    cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 10)
+
+    cv2.imwrite('test/pretreatment.png', img * 255, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
     fig,ax = plt.subplots(2,2,figsize=[10,10])
     ax[0,0].imshow(img)  # CT切片图
     ax[0,1].imshow(img,cmap='gray')  # CT切片灰度图
