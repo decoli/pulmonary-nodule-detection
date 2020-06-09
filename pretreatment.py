@@ -172,7 +172,8 @@ def check_multi_nodule():
     count_image = 0
 
     seriesuid_temp = None
-    coord_z_list = []
+    slice_list = []
+    multi_list = []
     for each_annotation in pd_annotation.iterrows():
         seriesuid = each_annotation[1].seriesuid
         coord_x = each_annotation[1].coordX
@@ -180,14 +181,30 @@ def check_multi_nodule():
         coord_z = each_annotation[1].coordZ
         diameter_mm = each_annotation[1].diameter_mm
 
+        mhd_name = '{}.mhd'.format(seriesuid)
+        mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
+
+        numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path) # numpyImage.shape) 维度为(slice,w,h)
+
+        # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
+        worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
+        voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
+    
+        slice = int(voxelCoord[2] + 0.5)
+
         if seriesuid_temp == seriesuid:
-            if coord_z in coord_z_list:
+            if slice in slice_list:
                 print('multi nodules in one image')
-            coord_z_list.append(coord_z)
+                multi_list.append((seriesuid_temp, slice))
+            slice_list.append(slice)
         else:
             seriesuid_temp = seriesuid
-            coord_z_list.clear()
-            coord_z_list.append(coord_z)
+            slice_list.clear()
+            slice_list.append(slice)
+
+        print(count_image)
+        count_image += 1
+    print(multi_list)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
