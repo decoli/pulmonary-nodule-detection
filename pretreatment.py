@@ -186,6 +186,7 @@ def check_multi_nodule():
             coord_z_list.append(coord_z)
         else:
             seriesuid_temp = seriesuid
+            coord_z_list.clear()
             coord_z_list.append(coord_z)
 
 if __name__ == '__main__':
