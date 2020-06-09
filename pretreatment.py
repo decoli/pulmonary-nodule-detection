@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(
     description='use data for debug'
 )
 parser.add_argument('--debug', action='store_true')
+parser.add_argument('--draw-nodule', action='store_true')
 args = parser.parse_args()
 
 # set path
@@ -30,15 +31,6 @@ if args.debug:
     working_path = 'data/LUNA16/sample'
     cand_path = 'data/LUNA16/candidates.csv'
     anno_path = 'data/LUNA16/annotations.csv'
-
-# '''read csv as a list of lists'''
-# def readCSV(filename):
-#     lines = []
-#     with open(filename, "rt") as f:
-#         csvreader = csv.reader(f)
-#         for line in csvreader:
-#             lines.append(line)
-#     return lines
 
 '''convert world coordinate to real coordinate'''
 def worldToVoxelCoord(worldCoord, origin, spacing):
@@ -67,13 +59,6 @@ for each_annotation in pd_annotation.iterrows():
     numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path)
     # numpyImage.shape) 维度为(slice,w,h)
 
-    # 加载结节标注
-    # annos = readCSV(anno_path)  # 共1186个结节标注
-    # print(len(annos))
-    # print(annos[0:3])
-    # 获取一个结节标注
-    # cand = annos[24]  
-    # print(cand)
     # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
     worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
     voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
@@ -81,9 +66,6 @@ for each_annotation in pd_annotation.iterrows():
  
     slice = int(voxelCoord[2] + 0.5)
     img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
-    # image_original = img
-    # plt.imshow(img,cmap='gray')
-    # plt.show()
 
     # 由于肺部与周围组织颜色对比明显，考虑通过聚类的方法找到可区分肺区域和非肺区域的阈值，实现二值化。
     mean = np.mean(img)
@@ -91,12 +73,7 @@ for each_annotation in pd_annotation.iterrows():
     img = img-mean
     img = img/std
 
-    # f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
-    # ax1.imshow(image_original,cmap='gray')
-    # plt.hist(img.flatten(),bins=200)
-    # plt.show()
-
-    # Kmean
+    # K-mean
     #提取肺部大致均值
     middle = img[100:400,100:400]  
     mean = np.mean(middle)  
@@ -104,17 +81,14 @@ for each_annotation in pd_annotation.iterrows():
     # 将图片最大值和最小值替换为肺部大致均值
     max = np.max(img)
     min = np.min(img)
-    print(mean,min,max)
     img[img==max]=mean
     img[img==min]=mean
 
-
-    image_array = img
-    import matplotlib.pyplot as plt
-    f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
-    ax1.imshow(image_array,cmap='gray')
-    ax2.hist(img.flatten(),bins=200)
-    plt.show()
+    # image_array = img
+    # f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
+    # ax1.imshow(image_array,cmap='gray')
+    # ax2.hist(img.flatten(),bins=200)
+    # plt.show()
 
     kmeans = KMeans(n_clusters=2).fit(np.reshape(middle,[np.prod(middle.shape),1]))
     centers = sorted(kmeans.cluster_centers_.flatten())
@@ -122,24 +96,21 @@ for each_annotation in pd_annotation.iterrows():
     thresh_img = np.where(img<threshold,1.0,0.0)  # threshold the image
     print('kmean centers:',centers)
     print('threshold:',threshold)
-    '''
-    kmean centers: [-0.2307924288649088, 1.472218336483015]
-    threshold: 0.6207129538090531
-    '''
+
     # 聚类完成后，清晰可见偏黑色区域为一类，偏灰色区域为另一类。
-    image_array = thresh_img
-    plt.imshow(image_array,cmap='gray') 
-    plt.show()
+    # image_array = thresh_img
+    # plt.imshow(image_array,cmap='gray') 
+    # plt.show()
 
     eroded = morphology.erosion(thresh_img,np.ones([4,4]))  
     dilation = morphology.dilation(eroded,np.ones([10,10]))  
     labels = measure.label(dilation)   
-    fig,ax = plt.subplots(2,2,figsize=[8,8])
-    ax[0,0].imshow(thresh_img,cmap='gray')  
-    ax[0,1].imshow(eroded,cmap='gray') 
-    ax[1,0].imshow(dilation,cmap='gray')  
-    ax[1,1].imshow(labels)  # 标注mask区域切片图
-    plt.show()
+    # fig,ax = plt.subplots(2,2,figsize=[8,8])
+    # ax[0,0].imshow(thresh_img,cmap='gray')  
+    # ax[0,1].imshow(eroded,cmap='gray') 
+    # ax[1,0].imshow(dilation,cmap='gray')  
+    # ax[1,1].imshow(labels)  # 标注mask区域切片图
+    # plt.show()
 
     label_vals = np.unique(labels)
     regions = measure.regionprops(labels) # 获取连通区域
@@ -151,30 +122,22 @@ for each_annotation in pd_annotation.iterrows():
         print(B)
         if B[2]-B[0]<475 and B[3]-B[1]<475 and B[0]>40 and B[2]<472:
             good_labels.append(prop.label)
-    '''
-    (0L, 0L, 512L, 512L)
-    (190L, 253L, 409L, 384L)
-    (200L, 110L, 404L, 235L)
-    '''
+ 
     # 根据肺部标签获取肺部mask，并再次进行’膨胀‘操作，以填满并扩张肺部区域
     mask = np.ndarray([512,512],dtype=np.int8)
     mask[:] = 0
     for N in good_labels:
         mask = mask + np.where(labels==N,1,0)
     mask = morphology.dilation(mask,np.ones([10,10])) # one last dilation
-    #imgs_to_process[i] = mask
 
-    point_left = int(voxelCoord[0] + 0.5) - 16
-    point_up = int(voxelCoord[1] + 0.5) - 16
-    point_left_up = (int(point_left), int(point_up))
-
-    point_right = int(voxelCoord[0] + 0.5) + 16
-    point_down = int(voxelCoord[1] + 0.5) + 16
-    point_right_down = (int(point_right), int(point_down))
-
-    cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 10)
-
-    cv2.imwrite('test/pretreatment.png', img * 255, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+    if args.draw_nodule:
+        point_left = int(voxelCoord[0] + 0.5) - 16
+        point_up = int(voxelCoord[1] + 0.5) - 16
+        point_left_up = (int(point_left), int(point_up))
+        point_right = int(voxelCoord[0] + 0.5) + 16
+        point_down = int(voxelCoord[1] + 0.5) + 16
+        point_right_down = (int(point_right), int(point_down))
+        cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 2)
 
     fig,ax = plt.subplots(2,2,figsize=[10,10])
     ax[0,0].imshow(img)  # CT切片图
