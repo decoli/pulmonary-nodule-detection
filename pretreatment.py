@@ -1,3 +1,4 @@
+import argparse
 import csv
 import glob
 import os
@@ -5,13 +6,12 @@ from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import SimpleITK as sitk  # 医疗图片处理包
 from PIL import Image
-
 from skimage import measure, morphology
 from skimage.transform import resize
 from sklearn.cluster import KMeans
-import argparse
 
 parser = argparse.ArgumentParser(
     description='use data for debug'
@@ -28,10 +28,19 @@ if args.debug:
     cand_path = 'data/LUNA16/candidates.csv'
     anno_path = 'data/LUNA16/annotations.csv'
 
-list_img_path= glob(os.path.join(path_working, '*', '*.mhd'), recursive=True)
+pd_annotation = pd.read_csv(anno_path)
+print(pd_annotation)
 
-for img_path in list_img_path:
-    # img_path  = '/home/dataset/medical/luna16/subset0/1.3.6.1.4.1.14519.5.2.1.6279.6001.108197895896446896160048741492.mhd'
+for each_annotation in pd_annotation.iterrows():
+    seriesuid = each_annotation[1].seriesuid
+    coord_x = each_annotation[1].coordX
+    coord_y = each_annotation[1].coordY
+    coord_z = each_annotation[1].coordZ
+    diameter_mm = each_annotation[1].diameter_mm
+
+    name_mhd = '{}.mhd'.format(seriesuid)
+    path_mhd = glob(os.path.join(path_working, '**', name_mhd), recursive=True)[0]
+
     def load_itk_image(filename):
         itkimage = sitk.ReadImage(filename)
         numpyImage = sitk.GetArrayFromImage(itkimage)
@@ -39,7 +48,7 @@ for img_path in list_img_path:
         numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
         return numpyImage, numpyOrigin, numpySpacing
 
-    numpyImage, numpyOrigin, numpySpacing = load_itk_image(img_path)
+    numpyImage, numpyOrigin, numpySpacing = load_itk_image(path_mhd)
     print(numpyImage.shape)  # 维度为(slice,w,h)
     print(numpyOrigin)
     print(numpySpacing)
