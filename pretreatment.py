@@ -19,19 +19,17 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
-parser.add_argument('--mode', choices=['get_masked_image', 'get_voc_info'], help='set the run mode')
+parser.add_argument('--mode', choices=['get_masked_image', 'get_voc_info', 'check_multi_nodule'], help='set the run mode')
 args = parser.parse_args()
 
 # set path
 working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
-cand_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\candidates.csv'
-anno_path = 'G:\lung_image\\all_LUNA16\\luna16_backup\\httpacademictorrentscom\\CSVFILES\\annotations.csv'
+cand_path = 'data/LUNA16/candidates.csv'
+anno_path = 'data/LUNA16/annotations.csv'
 
 # set debug mode
 if args.debug:
     working_path = 'data/LUNA16/sample'
-    cand_path = 'data/LUNA16/candidates.csv'
-    anno_path = 'data/LUNA16/annotations.csv'
 
 def get_masked_image():
     '''convert world coordinate to real coordinate'''
@@ -156,8 +154,44 @@ def get_masked_image():
 def get_voc_info():
     pass
 
+def check_multi_nodule():
+    '''convert world coordinate to real coordinate'''
+    def worldToVoxelCoord(worldCoord, origin, spacing):
+        stretchedVoxelCoord = np.absolute(worldCoord - origin)
+        voxelCoord = stretchedVoxelCoord / spacing
+        return voxelCoord
+
+    def load_itk_image(filename):
+        itkimage = sitk.ReadImage(filename)
+        numpyImage = sitk.GetArrayFromImage(itkimage)
+        numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
+        numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
+        return numpyImage, numpyOrigin, numpySpacing
+
+    pd_annotation = pd.read_csv(anno_path)
+    count_image = 0
+
+    seriesuid_temp = None
+    coord_z_list = []
+    for each_annotation in pd_annotation.iterrows():
+        seriesuid = each_annotation[1].seriesuid
+        coord_x = each_annotation[1].coordX
+        coord_y = each_annotation[1].coordY
+        coord_z = each_annotation[1].coordZ
+        diameter_mm = each_annotation[1].diameter_mm
+
+        if seriesuid_temp == seriesuid:
+            if coord_z in coord_z_list:
+                print('multi nodules in one image')
+            coord_z_list.append(coord_z)
+        else:
+            seriesuid_temp = seriesuid
+            coord_z_list.append(coord_z)
+
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
         get_masked_image()
     elif args.mode == 'get_voc_info':
         get_voc_info()
+    elif args.mode == 'check_multi_nodule':
+        check_multi_nodule()
