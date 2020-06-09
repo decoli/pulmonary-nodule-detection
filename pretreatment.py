@@ -46,6 +46,7 @@ def load_itk_image(filename):
     return numpyImage, numpyOrigin, numpySpacing
 
 pd_annotation = pd.read_csv(anno_path)
+count_image = 0
 for each_annotation in pd_annotation.iterrows():
     seriesuid = each_annotation[1].seriesuid
     coord_x = each_annotation[1].coordX
@@ -61,7 +62,7 @@ for each_annotation in pd_annotation.iterrows():
     # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
     worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
     voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
-    print(voxelCoord)
+    # print(voxelCoord)
  
     slice = int(voxelCoord[2] + 0.5)
     img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
@@ -93,8 +94,8 @@ for each_annotation in pd_annotation.iterrows():
     centers = sorted(kmeans.cluster_centers_.flatten())
     threshold = np.mean(centers)  
     thresh_img = np.where(img<threshold,1.0,0.0)  # threshold the image
-    print('kmean centers:',centers)
-    print('threshold:',threshold)
+    # print('kmean centers:',centers)
+    # print('threshold:',threshold)
 
     # 聚类完成后，清晰可见偏黑色区域为一类，偏灰色区域为另一类。
     # image_array = thresh_img
@@ -118,7 +119,7 @@ for each_annotation in pd_annotation.iterrows():
     good_labels = []
     for prop in regions:
         B = prop.bbox
-        print(B)
+        # print(B)
         if B[2]-B[0]<475 and B[3]-B[1]<475 and B[0]>40 and B[2]<472:
             good_labels.append(prop.label)
  
@@ -147,4 +148,7 @@ for each_annotation in pd_annotation.iterrows():
     axes = fig.add_axes([0, 0, 1, 1])
     axes.set_axis_off()
     axes.imshow(img*mask, cmap='gray')
-    fig.savefig('test.png')
+    path_img = os.path.join('data/LUNA16/masked/{}.png'.format(count_image))
+    fig.savefig(path_img)
+
+    count_image += 1
