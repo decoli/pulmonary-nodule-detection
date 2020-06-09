@@ -56,8 +56,7 @@ for each_annotation in pd_annotation.iterrows():
     mhd_name = '{}.mhd'.format(seriesuid)
     mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
 
-    numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path)
-    # numpyImage.shape) 维度为(slice,w,h)
+    numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path) # numpyImage.shape) 维度为(slice,w,h)
 
     # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
     worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
@@ -130,6 +129,7 @@ for each_annotation in pd_annotation.iterrows():
         mask = mask + np.where(labels==N,1,0)
     mask = morphology.dilation(mask,np.ones([10,10])) # one last dilation
 
+    # flag draw nodule
     if args.draw_nodule:
         point_left = int(voxelCoord[0] + 0.5) - 16
         point_up = int(voxelCoord[1] + 0.5) - 16
@@ -139,9 +139,12 @@ for each_annotation in pd_annotation.iterrows():
         point_right_down = (int(point_right), int(point_down))
         cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 2)
 
-    fig,ax = plt.subplots(2,2,figsize=[10,10])
-    ax[0,0].imshow(img)  # CT切片图
-    ax[0,1].imshow(img,cmap='gray')  # CT切片灰度图
-    ax[1,0].imshow(mask,cmap='gray')  # 标注mask，标注区域为1，其他为0
-    ax[1,1].imshow(img*mask,cmap='gray')  # 标注mask区域切片图
-    plt.show()
+    # save the image
+    width = img.shape[0]
+    height = img.shape[1]
+    dpi = 100
+    fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
+    axes = fig.add_axes([0, 0, 1, 1])
+    axes.set_axis_off()
+    axes.imshow(img*mask, cmap='gray')
+    fig.savefig('test.png')
