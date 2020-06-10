@@ -248,10 +248,9 @@ def get_voc_info():
 
         count_image_temp = count_image
         if seriesuid_temp == seriesuid:
+            count_image_list.append(count_image)
             if slice in slice_list:
                 count_image_temp = count_image_list[slice_list.index(slice)] # 使用相同名称，用于重写.xml
-            else:
-                count_image_list.append(count_image)
         else:
             seriesuid_temp = seriesuid
             count_image_list.clear()
