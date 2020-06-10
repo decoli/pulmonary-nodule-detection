@@ -26,7 +26,7 @@ args = parser.parse_args()
 # set path
 working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
 cand_path = 'data/LUNA16/candidates.csv'
-anno_path = 'data/LUNA16/annotations.csv'
+anno_path = 'data/LUNA16/annotations_demo.csv'
 
 # set debug mode
 if args.debug:
@@ -262,7 +262,7 @@ def get_voc_info():
             else:
                 nodule_uid_list.append(nodule_dict_list) # nodule_uid_list 增添元素 nodule_dict_list
 
-                nodule_dict_list.clear()
+                nodule_dict_list = [] # 不能使用 nodule_dict_list.clear(), 会清空引用
                 nodule_dict_list.append(nodule_dict) # 清空nodule_dict_list后，加入新uid的结节
 
                 seriesuid_temp = seriesuid # 准备处理下一轮不同uid的结节数据
