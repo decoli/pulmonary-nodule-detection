@@ -222,7 +222,6 @@ def get_voc_info():
     seriesuid_temp = None
     count_image_list = []
     slice_list = []
-    multi_list = []
 
     list_x = []
     list_y = []
@@ -247,18 +246,19 @@ def get_voc_info():
     
         slice = int(voxelCoord[2] + 0.5)
 
+        count_image_temp = count_image
         if seriesuid_temp == seriesuid:
+            count_image_list.append(count_image)
             if slice in slice_list:
-                print('multi nodules in one image')
-                multi_list.append((seriesuid_temp, slice))
-            slice_list.append(slice)
+                count_image_temp = count_image_list(slice_list.index(slice))
         else:
             seriesuid_temp = seriesuid
+            count_image_list.clear()
             slice_list.clear()
-            slice_list.append(slice)
+        slice_list.append(slice)
 
         # make .xml
-        name_image = '{}.png'.format(count_image)
+        name_image = '{}.png'.format(count_image_temp)
         tree = to_xml(
             name=name_image,
             list_x=list_x,
@@ -268,7 +268,7 @@ def get_voc_info():
         )
 
         # save .xml
-        write_xml(tree, "./out.xml")
+        write_xml(tree, "data\LUNA16\masked\Annotations\{}.xml".format(count_image_temp))
         count_image +=1
 
 def check_multi_nodule():
