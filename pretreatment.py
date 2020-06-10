@@ -32,20 +32,20 @@ anno_path = 'data/LUNA16/annotations.csv'
 if args.debug:
     working_path = 'data/LUNA16/sample'
 
+'''convert world coordinate to real coordinate'''
+def worldToVoxelCoord(worldCoord, origin, spacing):
+    stretchedVoxelCoord = np.absolute(worldCoord - origin)
+    voxelCoord = stretchedVoxelCoord / spacing
+    return voxelCoord
+
+def load_itk_image(filename):
+    itkimage = sitk.ReadImage(filename)
+    numpyImage = sitk.GetArrayFromImage(itkimage)
+    numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
+    numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
+    return numpyImage, numpyOrigin, numpySpacing
+
 def get_masked_image():
-    '''convert world coordinate to real coordinate'''
-    def worldToVoxelCoord(worldCoord, origin, spacing):
-        stretchedVoxelCoord = np.absolute(worldCoord - origin)
-        voxelCoord = stretchedVoxelCoord / spacing
-        return voxelCoord
-
-    def load_itk_image(filename):
-        itkimage = sitk.ReadImage(filename)
-        numpyImage = sitk.GetArrayFromImage(itkimage)
-        numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
-        numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
-        return numpyImage, numpyOrigin, numpySpacing
-
     pd_annotation = pd.read_csv(anno_path)
     count_image = 0
     for each_annotation in pd_annotation.iterrows():
@@ -227,19 +227,6 @@ def get_voc_info():
     write_xml(tree, "./out.xml")
 
 def check_multi_nodule():
-    '''convert world coordinate to real coordinate'''
-    def worldToVoxelCoord(worldCoord, origin, spacing):
-        stretchedVoxelCoord = np.absolute(worldCoord - origin)
-        voxelCoord = stretchedVoxelCoord / spacing
-        return voxelCoord
-
-    def load_itk_image(filename):
-        itkimage = sitk.ReadImage(filename)
-        numpyImage = sitk.GetArrayFromImage(itkimage)
-        numpyOrigin = np.array(list(itkimage.GetOrigin()))  # CT原点坐标
-        numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
-        return numpyImage, numpyOrigin, numpySpacing
-
     pd_annotation = pd.read_csv(anno_path)
     count_image = 0
 
