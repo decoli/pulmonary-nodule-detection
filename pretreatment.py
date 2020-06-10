@@ -26,7 +26,7 @@ args = parser.parse_args()
 # set path
 working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
 cand_path = 'data/LUNA16/candidates.csv'
-anno_path = 'data/LUNA16/annotations_demo.csv'
+anno_path = 'data/LUNA16/annotations.csv'
 
 # set debug mode
 if args.debug:
