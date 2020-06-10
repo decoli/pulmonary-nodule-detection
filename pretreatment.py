@@ -248,19 +248,22 @@ def get_voc_info():
 
         count_image_temp = count_image
         if seriesuid_temp == seriesuid:
-            count_image_list.append(count_image)
             if slice in slice_list:
-                count_image_temp = count_image_list[slice_list.index(slice)]
+                count_image_temp = count_image_list[slice_list.index(slice)] # 使用相同名称，用于重写.xml
+            else:
+                count_image_list.append(count_image)
         else:
             seriesuid_temp = seriesuid
             count_image_list.clear()
 
+            # 清空图片中的结节信息
             slice_list.clear()
             list_x.clear()
             list_y.clear()
             list_w.clear()
             list_h.clear()
 
+        # 图片中的结节信息
         slice_list.append(slice)
         list_x.append(int(voxelCoord[0] + 0.5))
         list_y.append(int(voxelCoord[1] + 0.5))
