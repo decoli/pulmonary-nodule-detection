@@ -250,11 +250,10 @@ def get_voc_info():
         if seriesuid_temp == seriesuid:
             count_image_list.append(count_image)
             if slice in slice_list:
-                count_image_temp = count_image_list(slice_list.index(slice))
+                count_image_temp = count_image_list[slice_list.index(slice)]
         else:
             seriesuid_temp = seriesuid
             count_image_list.clear()
-            count_image_temp.clear()
 
             slice_list.clear()
             list_x.clear()
