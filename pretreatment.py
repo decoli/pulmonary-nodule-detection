@@ -217,17 +217,12 @@ def get_voc_info():
         tree.write(out_path, encoding="utf-8",xml_declaration=True)
 
     pd_annotation = pd.read_csv(anno_path)
-    count_image = 0
 
     seriesuid_temp = None
-    count_image_list = []
-    slice_list = []
+    nodule_uid_list = []
+    nodule_dict_list = []
 
-    list_x = []
-    list_y = []
-    list_w = []
-    list_h = []
-
+    count_image = 0
     for each_annotation in pd_annotation.iterrows():
         seriesuid = each_annotation[1].seriesuid
         coord_x = each_annotation[1].coordX
@@ -246,43 +241,67 @@ def get_voc_info():
     
         slice = int(voxelCoord[2] + 0.5)
 
-        count_image_temp = count_image
-        if seriesuid_temp == seriesuid:
-            count_image_list.append(count_image)
-            if slice in slice_list:
-                count_image_temp = count_image_list[slice_list.index(slice)] # 使用相同名称，用于重写.xml
-        else:
+        nodule_dict = {
+            'slice': slice,
+            'x': int(voxelCoord[0] + 0.5),
+            'y': int(voxelCoord[1] + 0.5),
+            'w': 32,
+            'h': 32,
+            'count_image': count_image,
+        }
+        nodule_dict_list.append(nodule_dict)
+
+        if not (seriesuid_temp == seriesuid or seriesuid_temp == None):
+            nodule_uid_list.append(nodule_dict_list)
+            nodule_dict_list.clear()
             seriesuid_temp = seriesuid
-            count_image_list.clear()
 
-            # 清空图片中的结节信息
-            slice_list.clear()
-            list_x.clear()
-            list_y.clear()
-            list_w.clear()
-            list_h.clear()
+            print(count_image)
+            count_image +=1
+    nodule_uid_list.append(nodule_dict_list)
 
-        # 图片中的结节信息
-        slice_list.append(slice)
-        list_x.append(int(voxelCoord[0] + 0.5))
-        list_y.append(int(voxelCoord[1] + 0.5))
-        list_w.append(32) # 根据图像分辨率求
-        list_h.append(32) # 根据图像分辨率求
+    # loop nodule_uid_list
+    for each_nodule_dict_list in nodule_uid_list:
 
-        # make .xml
-        name_image = '{}.png'.format(count_image_temp)
-        tree = to_xml(
-            name=name_image,
-            list_x=list_x,
-            list_y=list_y,
-            list_w=list_w,
-            list_h=list_h
-        )
+        # get list of slice
+        list_slice = []
+        for each_nodule_dict in each_nodule_dict_list:
+            if not each_nodule_dict['slice'] in list_slice:
+                list_slice.append(each_nodule_dict['slice'])
 
-        # save .xml
-        write_xml(tree, "data\LUNA16\masked\Annotations\{}.xml".format(count_image_temp))
-        print(count_image)
-        count_image +=1
+        # make .xml for each nodule
+        for each_slice in list_slice:
+
+            list_nodule = []
+            list_x = []
+            list_y = []
+            list_w = []
+            list_h = []
+            list_count_image = []
+
+            for each_nodule_dict in each_nodule_dict_list:
+                if each_nodule_dict['slice'] == each_slice:
+                    list_nodule.append(each_nodule_dict)
+
+            for each_nodule in list_nodule:
+                list_x.append(each_nodule['x'])
+                list_y.append(each_nodule['y'])
+                list_h.append(each_nodule['h'])
+                list_w.append(each_nodule['w'])
+                list_count_image.append(each_nodule['count_image'])
+
+            # make .xml
+            name_image = '{}.png'.format(min(list_count_image))
+            tree = to_xml(
+                name=name_image,
+                list_x=list_x,
+                list_y=list_y,
+                list_w=list_w,
+                list_h=list_h
+            )
+
+            # save .xml
+            write_xml(tree, "data\LUNA16\masked\Annotations\{}.xml".format(min(list_count_image)))
 
 def check_multi_nodule():
     pd_annotation = pd.read_csv(anno_path)
