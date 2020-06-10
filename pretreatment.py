@@ -279,6 +279,7 @@ def get_voc_info():
 
         # save .xml
         write_xml(tree, "data\LUNA16\masked\Annotations\{}.xml".format(count_image_temp))
+        print(count_image)
         count_image +=1
 
 def check_multi_nodule():
