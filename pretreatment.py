@@ -3,6 +3,7 @@ import csv
 import glob
 import os
 from glob import glob
+from xml.etree.ElementTree import Element, ElementTree
 
 import cv2
 import matplotlib.pyplot as plt
@@ -152,7 +153,78 @@ def get_masked_image():
         count_image += 1
 
 def get_voc_info():
-    pass
+    def beatau(e,level=0):
+        if len(e) > 0:
+            e.text='\n'+'\t'*(level+1)
+            for child in e:
+                beatau(child,level+1)
+            child.tail=child.tail[:-1]
+        e.tail='\n' + '\t'*level
+    
+    def to_xml(name, list_x, list_y, list_w, list_h):
+        root = Element('annotation')#根节点
+        erow1 = Element('folder')#节点1
+        erow1.text= "VOC"
+        
+        
+        erow2 = Element('filename')#节点2
+        erow2.text= str(name)
+        
+        erow3 = Element('size')#节点3
+        erow31 = Element('width')
+        erow31.text = "512"
+        erow32 = Element('height')
+        erow32.text = "512"
+        erow33 = Element('depth')
+        erow33.text = "3" 
+        erow3.append(erow31)
+        erow3.append(erow32)
+        erow3.append(erow33)
+
+        root.append(erow1)
+        root.append(erow2)
+        root.append(erow3)
+
+        for x, y, w, h in zip(list_x, list_y, list_w, list_h):
+            erow4 = Element('object')
+            erow41 = Element('name')
+            erow41.text = 'nodule'
+            erow42 = Element('bndbox')
+            erow4.append(erow41)
+            erow4.append(erow42)
+            erow421 = Element('xmin')
+            erow421.text = str(x - np.round(w/2).astype(int))
+            erow422 = Element('ymin')
+            erow422.text = str(y - np.round(h/2).astype(int))
+            erow423 = Element('xmax')
+            erow423.text = str(x + np.round(w/2).astype(int))
+            erow424 = Element('ymax')
+            erow424.text = str(y + np.round(h/2).astype(int))
+            erow42.append(erow421)
+            erow42.append(erow422)
+            erow42.append(erow423)
+            erow42.append(erow424)
+            root.append(erow4)
+
+        beatau(root)      
+
+        return ElementTree(root)
+
+    def write_xml(tree, out_path):  
+        '''''将xml文件写出 
+        tree: xml树 
+        out_path: 写出路径'''  
+        tree.write(out_path, encoding="utf-8",xml_declaration=True)
+
+    tree = to_xml(
+        name='test.png',
+        list_x=[381, 233],
+        list_y=[266, 334],
+        list_w=[20, 56],
+        list_h=[20, 51])
+
+    # save the .xml
+    write_xml(tree, "./out.xml")
 
 def check_multi_nodule():
     '''convert world coordinate to real coordinate'''
@@ -213,3 +285,5 @@ if __name__ == '__main__':
         get_voc_info()
     elif args.mode == 'check_multi_nodule':
         check_multi_nodule()
+    elif args.mode == 'get_voc_info':
+        get_voc_info()
