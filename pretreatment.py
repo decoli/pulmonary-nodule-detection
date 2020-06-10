@@ -254,6 +254,8 @@ def get_voc_info():
         else:
             seriesuid_temp = seriesuid
             count_image_list.clear()
+            count_image_temp.clear()
+
             slice_list.clear()
             list_x.clear()
             list_y.clear()
