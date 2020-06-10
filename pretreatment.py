@@ -249,15 +249,27 @@ def get_voc_info():
             'h': 32,
             'count_image': count_image,
         }
-        nodule_dict_list.append(nodule_dict)
 
-        if not (seriesuid_temp == seriesuid or seriesuid_temp == None):
-            nodule_uid_list.append(nodule_dict_list)
-            nodule_dict_list.clear()
+        # 针对第一个元素的处理
+        if seriesuid_temp == None:
+            nodule_dict_list.append(nodule_dict)
             seriesuid_temp = seriesuid
 
-            print(count_image)
-            count_image +=1
+        else:
+            # nodule_dict_list 增添元素 nodule_dict
+            if seriesuid_temp == seriesuid:
+                nodule_dict_list.append(nodule_dict)
+
+            # nodule_uid_list 增添元素 nodule_dict_list
+            else:                
+                nodule_uid_list.append(nodule_dict_list)
+                nodule_dict_list.clear()
+                seriesuid_temp = seriesuid
+
+        print(count_image)
+        count_image +=1
+    
+    # 末尾数据的处理
     nodule_uid_list.append(nodule_dict_list)
 
     # loop nodule_uid_list
