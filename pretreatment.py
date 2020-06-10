@@ -216,15 +216,60 @@ def get_voc_info():
         out_path: 写出路径'''  
         tree.write(out_path, encoding="utf-8",xml_declaration=True)
 
-    tree = to_xml(
-        name='test.png',
-        list_x=[381, 233],
-        list_y=[266, 334],
-        list_w=[20, 56],
-        list_h=[20, 51])
+    pd_annotation = pd.read_csv(anno_path)
+    count_image = 0
 
-    # save the .xml
-    write_xml(tree, "./out.xml")
+    seriesuid_temp = None
+    count_image_list = []
+    slice_list = []
+    multi_list = []
+
+    list_x = []
+    list_y = []
+    list_w = []
+    list_h = []
+
+    for each_annotation in pd_annotation.iterrows():
+        seriesuid = each_annotation[1].seriesuid
+        coord_x = each_annotation[1].coordX
+        coord_y = each_annotation[1].coordY
+        coord_z = each_annotation[1].coordZ
+        diameter_mm = each_annotation[1].diameter_mm
+
+        mhd_name = '{}.mhd'.format(seriesuid)
+        mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
+
+        numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path) # numpyImage.shape) 维度为(slice,w,h)
+
+        # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
+        worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
+        voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
+    
+        slice = int(voxelCoord[2] + 0.5)
+
+        if seriesuid_temp == seriesuid:
+            if slice in slice_list:
+                print('multi nodules in one image')
+                multi_list.append((seriesuid_temp, slice))
+            slice_list.append(slice)
+        else:
+            seriesuid_temp = seriesuid
+            slice_list.clear()
+            slice_list.append(slice)
+
+        # make .xml
+        name_image = '{}.png'.format(count_image)
+        tree = to_xml(
+            name=name_image,
+            list_x=list_x,
+            list_y=list_y,
+            list_w=list_w,
+            list_h=list_h
+        )
+
+        # save .xml
+        write_xml(tree, "./out.xml")
+        count_image +=1
 
 def check_multi_nodule():
     pd_annotation = pd.read_csv(anno_path)
