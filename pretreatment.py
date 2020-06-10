@@ -255,7 +255,16 @@ def get_voc_info():
             seriesuid_temp = seriesuid
             count_image_list.clear()
             slice_list.clear()
+            list_x.clear()
+            list_y.clear()
+            list_w.clear()
+            list_h.clear()
+
         slice_list.append(slice)
+        list_x.append(int(voxelCoord[0] + 0.5))
+        list_y.append(int(voxelCoord[1] + 0.5))
+        list_w.append(32) # 根据图像分辨率求
+        list_h.append(32) # 根据图像分辨率求
 
         # make .xml
         name_image = '{}.png'.format(count_image_temp)
