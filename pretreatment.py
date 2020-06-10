@@ -256,15 +256,16 @@ def get_voc_info():
             seriesuid_temp = seriesuid
 
         else:
-            # nodule_dict_list 增添元素 nodule_dict
             if seriesuid_temp == seriesuid:
-                nodule_dict_list.append(nodule_dict)
+                nodule_dict_list.append(nodule_dict) # nodule_dict_list 增添元素 nodule_dict
+            
+            else:
+                nodule_uid_list.append(nodule_dict_list) # nodule_uid_list 增添元素 nodule_dict_list
 
-            # nodule_uid_list 增添元素 nodule_dict_list
-            else:                
-                nodule_uid_list.append(nodule_dict_list)
                 nodule_dict_list.clear()
-                seriesuid_temp = seriesuid
+                nodule_dict_list.append(nodule_dict) # 清空nodule_dict_list后，加入新uid的结节
+
+                seriesuid_temp = seriesuid # 准备处理下一轮不同uid的结节数据
 
         print(count_image)
         count_image +=1
