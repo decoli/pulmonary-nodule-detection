@@ -133,7 +133,7 @@ class VOCDetection(data.Dataset):
                 self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
-        im, gt, h, w = self.pull_item(index)
+        img_original, im, gt, h, w = self.pull_item(index)
 
         return im, gt
 
@@ -166,8 +166,7 @@ class VOCDetection(data.Dataset):
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        # return img_original, torch.from_numpy(img).permute(2, 0, 1), target, height, width
-        return  torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        return img_original, torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 
     def pull_image(self, index):
