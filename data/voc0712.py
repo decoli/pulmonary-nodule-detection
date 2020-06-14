@@ -79,9 +79,9 @@ class VOCAnnotationTransform(object):
         """
         res = []
         for obj in target.iter('object'):
-            difficult = int(obj.find('difficult').text) == 1
-            if not self.keep_difficult and difficult:
-                continue
+            # difficult = int(obj.find('difficult').text) == 1
+            # if not self.keep_difficult and difficult:
+            #     continue
             name = obj.find('name').text.lower().strip()
             bbox = obj.find('bndbox')
 
