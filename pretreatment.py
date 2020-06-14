@@ -25,7 +25,7 @@ parser.add_argument(
     '--mode',
     choices=[
         'get_masked_image',
-        'get_voc_info',
+        'get_voc_anno',
         'check_multi_nodule',
         'get_main_txt'],
     help='set the run mode'
@@ -324,7 +324,7 @@ def get_voc_info():
             )
 
             # save .xml
-            write_xml(tree, "data\LUNA16\masked\Annotations\{}.xml".format(min(list_count_image)))
+            write_xml(tree, "data\LUNA16\masked\Annotations\{:06d}.xml".format(min(list_count_image)))
 
 def check_multi_nodule():
     pd_annotation = pd.read_csv(anno_path)
@@ -400,7 +400,7 @@ if __name__ == '__main__':
         get_voc_info()
     elif args.mode == 'check_multi_nodule':
         check_multi_nodule()
-    elif args.mode == 'get_voc_info':
+    elif args.mode == 'get_voc_anno':
         get_voc_info()
     elif args.mode == 'get_main_txt':
         get_main_txt()
