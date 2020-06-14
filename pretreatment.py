@@ -366,11 +366,32 @@ def check_multi_nodule():
     print(multi_list)
 
 def get_main_txt():
-    luna16_ano_path = 'data\LUNA16\masked\Annotations'
-    xml_path = os.path.join(os.path.join(luna16_ano_path, '*.xml'))
+    luna16_masked_path = 'data\LUNA16\masked'
+    xml_path = os.path.join(os.path.join(luna16_masked_path, 'Annotations', '*.xml'))
     list_xml_path = glob(xml_path)
     print(list_xml_path)
 
+    list_trainval = []
+    list_test = []
+    for xml_name in list_xml_path:
+        file_name = int(os.path.basename(xml_name).split('.')[0])
+
+        if len(list_trainval) <= int(1186 * 0.8):
+            list_trainval.append(file_name)
+        else:
+            list_test.append(file_name)
+
+    trainval_path = os.path.join(luna16_masked_path, 'ImageSets', 'Main','trainval.txt')
+    f=open(trainval_path,'w')
+    for i in list_trainval:
+        f.write('{:04d}\n'.format(i))
+    f.close()
+
+    test_path = os.path.join(luna16_masked_path, 'ImageSets', 'Main', 'test.txt')
+    f=open(test_path,'w')
+    for i in list_test:
+        f.write('{:04d}\n'.format(i))
+    f.close()
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
@@ -383,4 +404,3 @@ if __name__ == '__main__':
         get_voc_info()
     elif args.mode == 'get_main_txt':
         get_main_txt()
-
