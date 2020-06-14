@@ -48,7 +48,7 @@ VOC_CLASSES = (  # always index 0
 
 # note: if you used our download scripts, this should be right
 # VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
-VOC_ROOT = osp.join(HOME, "data/LUNA16/VOC/")
+VOC_ROOT = osp.join(HOME, "data/LUNA16/masked/")
 
 
 class VOCAnnotationTransform(object):
@@ -127,12 +127,15 @@ class VOCDetection(data.Dataset):
         self.target_transform = target_transform
         self.name = dataset_name
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
-        self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
+        self._imgpath = osp.join('%s', 'JPEGImages', '%s.png')
         self.ids = list()
-        for (year, name) in image_sets:
-            rootpath = osp.join(self.root, 'VOC' + year)
-            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
-                self.ids.append((rootpath, line.strip()))
+        # for (year, name) in image_sets:
+        #     rootpath = osp.join(self.root, 'VOC' + year)
+        #     for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+        #         self.ids.append((rootpath, line.strip()))
+        for line in open(osp.join(self.root, 'ImageSets', 'Main', 'trainval' + '.txt')):
+            self.ids.append((self.root, line.strip()))
+
 
     def __getitem__(self, index):
         img_original, im, gt, h, w = self.pull_item(index)

@@ -384,13 +384,13 @@ def get_main_txt():
     trainval_path = os.path.join(luna16_masked_path, 'ImageSets', 'Main','trainval.txt')
     f=open(trainval_path,'w')
     for i in list_trainval:
-        f.write('{:04d}\n'.format(i))
+        f.write('{:06d}\n'.format(i))
     f.close()
 
     test_path = os.path.join(luna16_masked_path, 'ImageSets', 'Main', 'test.txt')
     f=open(test_path,'w')
     for i in list_test:
-        f.write('{:04d}\n'.format(i))
+        f.write('{:06d}\n'.format(i))
     f.close()
 
 if __name__ == '__main__':
