@@ -20,7 +20,17 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
-parser.add_argument('--mode', choices=['get_masked_image', 'get_voc_info', 'check_multi_nodule'], help='set the run mode')
+
+parser.add_argument(
+    '--mode',
+    choices=[
+        'get_masked_image',
+        'get_voc_info',
+        'check_multi_nodule',
+        'get_main_txt'],
+    help='set the run mode'
+    )
+
 args = parser.parse_args()
 
 # set path
@@ -355,6 +365,13 @@ def check_multi_nodule():
         count_image += 1
     print(multi_list)
 
+def get_main_txt():
+    luna16_ano_path = 'data\LUNA16\masked\Annotations'
+    xml_path = os.path.join(os.path.join(luna16_ano_path, '*.xml'))
+    list_xml_path = glob(xml_path)
+    print(list_xml_path)
+
+
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
         get_masked_image()
@@ -364,3 +381,6 @@ if __name__ == '__main__':
         check_multi_nodule()
     elif args.mode == 'get_voc_info':
         get_voc_info()
+    elif args.mode == 'get_main_txt':
+        get_main_txt()
+

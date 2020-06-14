@@ -18,11 +18,12 @@ else:
     import xml.etree.ElementTree as ET
 
 VOC_CLASSES = (  # always index 0
-    'aeroplane', 'bicycle', 'bird', 'boat',
-    'bottle', 'bus', 'car', 'cat', 'chair',
-    'cow', 'diningtable', 'dog', 'horse',
-    'motorbike', 'person', 'pottedplant',
-    'sheep', 'sofa', 'train', 'tvmonitor')
+    # 'aeroplane', 'bicycle', 'bird', 'boat',
+    # 'bottle', 'bus', 'car', 'cat', 'chair',
+    # 'cow', 'diningtable', 'dog', 'horse',
+    # 'motorbike', 'person', 'pottedplant',
+    # 'sheep', 'sofa', 'train', 'tvmonitor')
+    'nodule')
 
     # 1.'aeroplane',
     # 2.'bicycle',
@@ -46,7 +47,8 @@ VOC_CLASSES = (  # always index 0
     # 20'tvmonitor'
 
 # note: if you used our download scripts, this should be right
-VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
+# VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
+VOC_ROOT = osp.join(HOME, "data/LUNA16/VOC/")
 
 
 class VOCAnnotationTransform(object):
