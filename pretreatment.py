@@ -155,7 +155,7 @@ def get_masked_image():
         axes = fig.add_axes([0, 0, 1, 1])
         axes.set_axis_off()
         axes.imshow(img*mask, cmap='gray')
-        path_img = os.path.join('data/LUNA16/masked/{}.png'.format(count_image))
+        path_img = os.path.join('data/LUNA16/masked/{:06d}.png'.format(count_image))
         fig.savefig(path_img)
         plt.close()
         print(count_image)
