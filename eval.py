@@ -52,12 +52,10 @@ parser.add_argument('--cleanup', default=True, type=str2bool,
                     help='Cleanup and remove results files following eval')
 parser.add_argument('--debug',
                     action='store_true',
-                    help='small data for debug.'
-                    )
+                    help='small data for debug.')
 parser.add_argument('--only_best_pred',
                     action='store_true',
-                    help='only draw the best pred box.'
-                    )
+                    help='only draw the best pred box.')
 parser.add_argument('--pred_threshold',
                     default=0.0,
                     type=float,
