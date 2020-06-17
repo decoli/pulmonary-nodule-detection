@@ -374,7 +374,7 @@ cachedir: Directory for caching the annotations
 
 
 def test_net(save_folder, net, cuda, dataset, transform, top_k,
-             im_size=512, thresh=0.05):
+             im_size=300, thresh=0.05):
     num_images = len(dataset)
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in
@@ -472,5 +472,5 @@ if __name__ == '__main__':
         cudnn.benchmark = True
     # evaluation
     test_net(args.save_folder, net, args.cuda, dataset,
-             BaseTransform(net.size, dataset_mean), args.top_k, 512,
+             BaseTransform(net.size, dataset_mean), args.top_k, 300,
              thresh=args.confidence_threshold)
