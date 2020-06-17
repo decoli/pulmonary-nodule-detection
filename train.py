@@ -99,7 +99,7 @@ def train():
             root=args.dataset_root,
             image_sets='trainval',
             transform=SSDAugmentation(cfg['min_dim'],
-                                                         MEANS))
+            MEANS))
 
     ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
     net = ssd_net
@@ -147,7 +147,7 @@ def train():
     step_index = 0
 
     if args.visdom:
-        vis_title = 'SSD.PyTorch on ' + dataset.name
+        vis_title = 'Lung detection on ' + dataset.name
         vis_legend = ['Loc Loss', 'Conf Loss', 'Total Loss']
         iter_plot = create_vis_plot('Iteration', 'Loss', vis_title, vis_legend)
         epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
