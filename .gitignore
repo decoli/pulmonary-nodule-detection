@@ -22,3 +22,4 @@ test/
 data/LUNA16/masked/
 data/LUNA16/csdn_VOC/
 data/LUNA16/csdn_VOC.zip
+weights/*
