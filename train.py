@@ -53,6 +53,8 @@ parser.add_argument('--save_folder', default='weights/',
                     help='Directory for saving checkpoint models')
 args = parser.parse_args()
 
+torch.cuda.set_device(0)
+
 if args.visdom:
     import visdom
     viz = visdom.Visdom()
