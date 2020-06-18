@@ -387,9 +387,6 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
     output_dir = get_output_dir('ssd300_120000', set_type)
     det_file = os.path.join(output_dir, 'detections.pkl')
 
-    if args.debug: # for debug
-        num_images = 10
-
     for i in range(0, num_images):
         img_original, im, gt, h, w = dataset.pull_item(i)
 
