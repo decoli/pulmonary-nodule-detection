@@ -22,8 +22,7 @@ parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
 
 parser.add_argument(
-    '--mode',
-    choices=[
+    '--mode',choices=[
         'get_masked_image',
         'get_voc_anno',
         'check_multi_nodule',
@@ -162,7 +161,7 @@ def get_masked_image():
 
         count_image += 1
 
-def get_voc_info():
+def get_voc_anno():
     def beatau(e,level=0):
         if len(e) > 0:
             e.text='\n'+'\t'*(level+1)
@@ -197,23 +196,36 @@ def get_voc_info():
 
         for x, y, w, h in zip(list_x, list_y, list_w, list_h):
             erow4 = Element('object')
+            
             erow41 = Element('name')
             erow41.text = 'nodule'
+
+            erow4_dif = Element('difficult')
+            erow4_dif.text = '0'
+
             erow42 = Element('bndbox')
+
             erow4.append(erow41)
+            erow4.append(erow4_dif)
             erow4.append(erow42)
+
             erow421 = Element('xmin')
             erow421.text = str(x - np.round(w/2).astype(int))
+
             erow422 = Element('ymin')
             erow422.text = str(y - np.round(h/2).astype(int))
+
             erow423 = Element('xmax')
             erow423.text = str(x + np.round(w/2).astype(int))
+
             erow424 = Element('ymax')
             erow424.text = str(y + np.round(h/2).astype(int))
+
             erow42.append(erow421)
             erow42.append(erow422)
             erow42.append(erow423)
             erow42.append(erow424)
+
             root.append(erow4)
 
         beatau(root)      
@@ -233,6 +245,7 @@ def get_voc_info():
     nodule_dict_list = []
 
     count_image = 0
+    print('output: data\\LUNA16\\masked\\Annotations\\')
     for each_annotation in pd_annotation.iterrows():
         seriesuid = each_annotation[1].seriesuid
         coord_x = each_annotation[1].coordX
@@ -277,7 +290,7 @@ def get_voc_info():
 
                 seriesuid_temp = seriesuid # 准备处理下一轮不同uid的结节数据
 
-        print(count_image)
+        print('\rplease wait... {:.2%}'.format((count_image + 1) / 1186), end='', flush=True)
         count_image +=1
     
     # 末尾数据的处理
@@ -396,11 +409,9 @@ def get_main_txt():
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
         get_masked_image()
-    elif args.mode == 'get_voc_info':
-        get_voc_info()
+    elif args.mode == 'get_voc_anno':
+        get_voc_anno()
     elif args.mode == 'check_multi_nodule':
         check_multi_nodule()
-    elif args.mode == 'get_voc_anno':
-        get_voc_info()
     elif args.mode == 'get_main_txt':
         get_main_txt()
