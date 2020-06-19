@@ -76,14 +76,15 @@ if torch.cuda.is_available():
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
-annopath = os.path.join(args.voc_root, 'VOC2007', 'Annotations', '%s.xml')
-imgpath = os.path.join(args.voc_root, 'VOC2007', 'JPEGImages', '%s.jpg')
+annopath = os.path.join(args.voc_root, 'Annotations', '%s.xml')
+imgpath = os.path.join(args.voc_root, 'JPEGImages', '%s.jpg')
 # imgsetpath = os.path.join(args.voc_root, 'VOC2007', 'ImageSets',
 #                           'Main', '{:s}.txt')
-imgsetpath = os.path.join(args.voc_root, 'VOC2007', 'ImageSets',
+imgsetpath = os.path.join(args.voc_root, 'ImageSets',
                           'Main', '{}.txt')
 YEAR = '2007'
-devkit_path = args.voc_root + 'VOC' + YEAR
+# devkit_path = args.voc_root + 'VOC' + YEAR
+devkit_path = args.voc_root
 dataset_mean = (104, 117, 123)
 set_type = 'test'
 
