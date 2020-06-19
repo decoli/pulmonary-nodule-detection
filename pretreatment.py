@@ -2,6 +2,7 @@ import argparse
 import csv
 import glob
 import os
+import sys
 from glob import glob
 from xml.etree.ElementTree import Element, ElementTree
 
@@ -200,6 +201,12 @@ def get_voc_anno():
             erow41 = Element('name')
             erow41.text = 'nodule'
 
+            erow4_pos = Element('pose')
+            erow4_pos.text = 'Unspecified'
+
+            erow4_tru = Element('truncated')
+            erow4_tru.text = '0'
+
             erow4_dif = Element('difficult')
             erow4_dif.text = '0'
 
@@ -254,8 +261,15 @@ def get_voc_anno():
         diameter_mm = each_annotation[1].diameter_mm
 
         mhd_name = '{}.mhd'.format(seriesuid)
-        mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
 
+        try:
+            mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
+        except IndexError:
+            print(
+                'no LUNA16 data.\n'
+                'set ssd to usb.')
+            sys.exit(0)
+            
         numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path) # numpyImage.shape) 维度为(slice,w,h)
 
         # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
