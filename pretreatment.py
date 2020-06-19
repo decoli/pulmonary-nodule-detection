@@ -213,6 +213,8 @@ def get_voc_anno():
             erow42 = Element('bndbox')
 
             erow4.append(erow41)
+            erow4.append(erow4_pos)
+            erow4.append(erow4_tru)
             erow4.append(erow4_dif)
             erow4.append(erow42)
 
