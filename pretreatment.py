@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
+parser.add_argument('--nodule_size', default=0, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
 
 parser.add_argument(
     '--mode',choices=[
@@ -276,14 +277,24 @@ def get_voc_anno():
     
         slice = int(voxelCoord[2] + 0.5)
 
-        nodule_dict = {
-            'slice': slice,
-            'x': int(voxelCoord[0] + 0.5),
-            'y': int(voxelCoord[1] + 0.5),
-            'w': int(diameter_mm / numpySpacing[0] + 0.5),
-            'h': int(diameter_mm / numpySpacing[1] + 0.5),
-            'count_image': count_image,
-        }
+        if args.nodule_size == 0: # dynamic
+            nodule_dict = {
+                'slice': slice,
+                'x': int(voxelCoord[0] + 0.5),
+                'y': int(voxelCoord[1] + 0.5),
+                'w': int(diameter_mm / numpySpacing[0] + 0.5),
+                'h': int(diameter_mm / numpySpacing[1] + 0.5),
+                'count_image': count_image,
+            }
+        else:
+            nodule_dict = {
+                'slice': slice,
+                'x': int(voxelCoord[0] + 0.5),
+                'y': int(voxelCoord[1] + 0.5),
+                'w': args.nodule_size,
+                'h': args.nodule_size,
+                'count_image': count_image,
+            }
 
         if args.debug:
             masked_image_dir = 'data\LUNA16\masked\JPEGImages'
