@@ -38,10 +38,6 @@ working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
 cand_path = 'data/LUNA16/candidates.csv'
 anno_path = 'data/LUNA16/annotations.csv'
 
-# set debug mode
-if args.debug:
-    working_path = 'data/LUNA16/sample'
-
 '''convert world coordinate to real coordinate'''
 def worldToVoxelCoord(worldCoord, origin, spacing):
     stretchedVoxelCoord = np.absolute(worldCoord - origin)
@@ -284,10 +280,22 @@ def get_voc_anno():
             'slice': slice,
             'x': int(voxelCoord[0] + 0.5),
             'y': int(voxelCoord[1] + 0.5),
-            'w': 32,
-            'h': 32,
+            'w': int(diameter_mm / numpySpacing[0] + 0.5),
+            'h': int(diameter_mm / numpySpacing[1] + 0.5),
             'count_image': count_image,
         }
+
+        if args.debug:
+            masked_image_dir = 'data\LUNA16\masked\JPEGImages'
+            name_image = '{:06d}.png'.format(nodule_dict['count_image'])
+            masked_image_path = os.path.join(masked_image_dir, name_image)
+            masked_image = cv2.imread(masked_image_path)
+            cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+            point_left_up = (int(nodule_dict['x'] - nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] - nodule_dict['h'] / 2 + 0.5))
+            point_right_down = (int(nodule_dict['x'] + nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] + nodule_dict['h'] / 2 + 0.5))
+            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 1)
+            cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
         # 针对第一个元素的处理
         if seriesuid_temp == None:
