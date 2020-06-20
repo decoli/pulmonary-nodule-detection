@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
 parser.add_argument('--nodule_size', default=0, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
+parser.add_argument('--bigger_size', default=1, type=float, help=' set the GT size bigger')
 
 parser.add_argument(
     '--mode',choices=[
@@ -282,8 +283,8 @@ def get_voc_anno():
                 'slice': slice,
                 'x': int(voxelCoord[0] + 0.5),
                 'y': int(voxelCoord[1] + 0.5),
-                'w': int(diameter_mm / numpySpacing[0] + 0.5),
-                'h': int(diameter_mm / numpySpacing[1] + 0.5),
+                'w': int(diameter_mm / numpySpacing[0] * args.bigger_size + 0.5),
+                'h': int(diameter_mm / numpySpacing[1] * args.bigger_size + 0.5),
                 'count_image': count_image,
             }
         else:
@@ -291,8 +292,8 @@ def get_voc_anno():
                 'slice': slice,
                 'x': int(voxelCoord[0] + 0.5),
                 'y': int(voxelCoord[1] + 0.5),
-                'w': args.nodule_size,
-                'h': args.nodule_size,
+                'w': args.nodule_size * args.bigger_size,
+                'h': args.nodule_size * args.bigger_size,
                 'count_image': count_image,
             }
 
