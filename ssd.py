@@ -279,7 +279,8 @@ class SSD(nn.Module):
 
         # apply vgg up to conv4_3 relu
         for k in range(23):
-            x = self.vgg[k](x)
+            x = self.vgg[k](x).detach()
+            # print(torch.cuda.memory_allocated() / 1024**2)
         # Conv4-3>Reluの計算結果にL2Normを適用しsourcesに追加
         s = self.L2Norm(x)
         sources.append(s)

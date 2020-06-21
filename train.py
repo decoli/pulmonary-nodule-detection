@@ -181,16 +181,16 @@ def train():
             batch_iterator=iter(data_loader)
             images, targets = next(batch_iterator)
 
-        if args.cuda:
+        # if args.cuda:
             # images = Variable(images.cuda())
             # targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
-            images = torch.tensor(images.cuda())
-            targets = [torch.tensor(ann.cuda()) for ann in targets]
-        else:
+            # images = images.cuda()
+            # targets = [torch.tensor(ann.cuda()) for ann in targets]
+        # else:
             # images = Variable(images)
             # targets = [Variable(ann, volatile=True) for ann in targets]
-            images = torch.tensor(images)
-            targets = [torch.tensor(ann) for ann in targets]
+            # images = torch.tensor(images)
+            # targets = [torch.tensor(ann) for ann in targets]
         # forward
         t0 = time.time()
         out = net(images)
@@ -242,7 +242,7 @@ def adjust_learning_rate(optimizer, gamma, step):
 
 
 def xavier(param):
-    init.xavier_uniform(param)
+    init.xavier_uniform_(param)
 
 
 def weights_init(m):
