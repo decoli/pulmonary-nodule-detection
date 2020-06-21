@@ -392,7 +392,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         img_original, im, gt, h, w = dataset.pull_item(i)
 
         x = Variable(im.unsqueeze(0))
-        if args.cuda:
+        if args.cuda and torch.cuda.is_available():
             x = x.cuda()
         _t['im_detect'].tic()
         detections = net(x).data
@@ -465,7 +465,7 @@ if __name__ == '__main__':
     dataset = VOCDetection(args.voc_root, set_type,
                            BaseTransform(300, dataset_mean),
                            VOCAnnotationTransform())
-    if args.cuda:
+    if args.cuda and torch.cuda.is_available():
         net = net.cuda()
         cudnn.benchmark = True
     # evaluation
