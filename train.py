@@ -111,9 +111,13 @@ def train():
         cudnn.benchmark = True
 
     if args.resume:
+        resume_flag_iteration = True
+        resume_flag_epoch = True
         print('Resuming training, loading {}...'.format(args.resume))
         ssd_net.load_weights(args.resume)
     else:
+        resume_flag_iteration = False
+        resume_flag_epoch = False
         vgg_weights = torch.load(args.save_folder + args.basenet)
         print('Loading base network...')
         ssd_net.vgg.load_state_dict(vgg_weights)
@@ -163,8 +167,13 @@ def train():
     for iteration in range(args.start_iter, cfg['max_iter']):
         if args.visdom and iteration != 0 and (iteration % epoch_size == 0):
             epoch += 1
-            update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
-                            'append', epoch_size)
+            if resume_flag_epoch:
+                update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
+                                'replace', epoch_size)
+                resume_flag_epoch = False
+            else:
+                update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
+                                'append', epoch_size)
             # reset epoch loss counters
             loc_loss = 0
             conf_loss = 0
@@ -214,8 +223,13 @@ def train():
         if args.visdom:
             # update_vis_plot(iteration, loss_l.data[0], loss_c.data[0],
             #                 iter_plot, epoch_plot, 'append')
-            update_vis_plot(iteration, loss_l.item(), loss_c.item(),
-                            iter_plot, epoch_plot, 'append')
+            if resume_flag_iteration:
+                update_vis_plot(iteration, loss_l.item(), loss_c.item(),
+                                iter_plot, epoch_plot, 'replace')
+                resume_flag_iteration = False
+            else:
+                update_vis_plot(iteration, loss_l.item(), loss_c.item(),
+                                iter_plot, epoch_plot, 'append')
 
         if iteration != 0 and iteration % 100 == 0:
             print('Saving state, iter:', iteration)
