@@ -154,7 +154,7 @@ class VOCDetection(data.Dataset):
         height, width, channels = img.shape
 
         # debug
-        cv2.imwrite('test/pull_item_1.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+        # cv2.imwrite('test/pull_item_1.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
         img_original = img
 
@@ -166,7 +166,7 @@ class VOCDetection(data.Dataset):
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
 
             # debug
-            cv2.imwrite('test/pull_item_2.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+            # cv2.imwrite('test/pull_item_2.png', img, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
             # to rgb
             img = img[:, :, (2, 1, 0)]
