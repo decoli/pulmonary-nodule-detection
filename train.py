@@ -181,11 +181,11 @@ def train():
             batch_iterator=iter(data_loader)
             images, targets = next(batch_iterator)
 
-        # if args.cuda:
+        if args.cuda:
             # images = Variable(images.cuda())
             # targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
-            # images = images.cuda()
-            # targets = [torch.tensor(ann.cuda()) for ann in targets]
+            images = images.cuda()
+            targets = [ann.cuda() for ann in targets]
         # else:
             # images = Variable(images)
             # targets = [Variable(ann, volatile=True) for ann in targets]
