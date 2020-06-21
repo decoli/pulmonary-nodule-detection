@@ -429,11 +429,9 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     if args.pred_threshold < scores[k]: # set threshold for draw boxes
                         point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
                         point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
-
                         cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
                         cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-                        cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
+                        print(scores[k])
         print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time))
 
