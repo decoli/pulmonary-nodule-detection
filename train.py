@@ -53,13 +53,12 @@ parser.add_argument('--save_folder', default='weights/',
                     help='Directory for saving checkpoint models')
 args = parser.parse_args()
 
-torch.cuda.set_device(0)
-
 if args.visdom:
     import visdom
     viz = visdom.Visdom()
 
 if torch.cuda.is_available():
+    torch.cuda.set_device(0)
     if args.cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     if not args.cuda:
