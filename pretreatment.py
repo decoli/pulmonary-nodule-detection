@@ -622,7 +622,6 @@ def negative_get_voc_anno():
         coord_x = each_annotation[1].coordX
         coord_y = each_annotation[1].coordY
         coord_z = each_annotation[1].coordZ
-        diameter_mm = each_annotation[1].diameter_mm
 
         mhd_name = '{}.mhd'.format(seriesuid)
 
@@ -642,24 +641,14 @@ def negative_get_voc_anno():
     
         slice = int(voxelCoord[2] + 0.5)
 
-        if args.nodule_size == 0: # dynamic
-            nodule_dict = {
-                'slice': slice,
-                'x': int(voxelCoord[0] + 0.5),
-                'y': int(voxelCoord[1] + 0.5),
-                'w': int(diameter_mm / numpySpacing[0] * args.bigger_size + 0.5),
-                'h': int(diameter_mm / numpySpacing[1] * args.bigger_size + 0.5),
-                'count_image': count_image,
-            }
-        else:
-            nodule_dict = {
-                'slice': slice,
-                'x': int(voxelCoord[0] + 0.5),
-                'y': int(voxelCoord[1] + 0.5),
-                'w': args.nodule_size * args.bigger_size,
-                'h': args.nodule_size * args.bigger_size,
-                'count_image': count_image,
-            }
+        nodule_dict = {
+            'slice': slice,
+            'x': int(voxelCoord[0] + 0.5),
+            'y': int(voxelCoord[1] + 0.5),
+            'w': args.nodule_size * args.bigger_size,
+            'h': args.nodule_size * args.bigger_size,
+            'count_image': count_image,
+        }
 
         if args.debug:
             masked_image_dir = 'data/LUNA16/negative/masked/JPEGImages'
@@ -670,7 +659,7 @@ def negative_get_voc_anno():
 
             point_left_up = (int(nodule_dict['x'] - nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] - nodule_dict['h'] / 2 + 0.5))
             point_right_down = (int(nodule_dict['x'] + nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] + nodule_dict['h'] / 2 + 0.5))
-            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 1)
+            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 3)
             cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
         # 针对第一个元素的处理
