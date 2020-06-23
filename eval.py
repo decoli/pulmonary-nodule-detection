@@ -375,7 +375,7 @@ cachedir: Directory for caching the annotations
 
 
 def test_net(save_folder, net, cuda, dataset, transform, top_k,
-             im_size=300, thresh=0.05):
+             im_size=512, thresh=0.05):
     num_images = len(dataset)
     # all detections are collected into:
     #    all_boxes[cls][image] = N x 5 array of detections in
@@ -450,7 +450,7 @@ def evaluate_detections(box_list, output_dir, dataset):
 if __name__ == '__main__':
     # load net
     num_classes = len(labelmap) + 1                      # +1 for background
-    net = build_ssd('test', 300, num_classes)            # initialize SSD
+    net = build_ssd('test', 512, num_classes)            # initialize SSD
 
     if torch.cuda.is_available():
         net.load_state_dict(torch.load(args.trained_model))
@@ -461,12 +461,12 @@ if __name__ == '__main__':
     print('Finished loading model!')
     # load data
     dataset = VOCDetection(args.voc_root, set_type,
-                           BaseTransform(300, dataset_mean),
+                           BaseTransform(512, dataset_mean),
                            VOCAnnotationTransform())
     if args.cuda and torch.cuda.is_available():
         net = net.cuda()
         cudnn.benchmark = True
     # evaluation
     test_net(args.save_folder, net, args.cuda, dataset,
-             BaseTransform(net.size, dataset_mean), args.top_k, 300,
+             BaseTransform(net.size, dataset_mean), args.top_k, 512,
              thresh=args.confidence_threshold)
