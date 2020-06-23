@@ -45,6 +45,7 @@ else:
 
 cand_path = 'data/LUNA16/candidates.csv'
 anno_path = 'data/LUNA16/annotations.csv'
+negative_anno_path = 'data/LUNA16/negative/negative_anno.csv'
 
 '''convert world coordinate to real coordinate'''
 def worldToVoxelCoord(worldCoord, origin, spacing):
@@ -175,7 +176,7 @@ def negative_get_masked_image():
     candidates_list.append('coordY')
     candidates_list.append('coordZ')
 
-    with open('data/LUNA16/masked/negative/negative_anno.csv', 'w') as f:
+    with open('data/LUNA16/negative/masked/negative_anno.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(candidates_list)
 
@@ -281,7 +282,7 @@ def negative_get_masked_image():
         axes = fig.add_axes([0, 0, 1, 1])
         axes.set_axis_off()
         axes.imshow(img*mask, cmap='gray')
-        path_img = os.path.join('data/LUNA16/masked/negative/{:06d}.png'.format(count_image))
+        path_img = os.path.join('data/LUNA16/negative/masked/Annotations/{:06d}.png'.format(count_image))
         fig.savefig(path_img)
         plt.close()
         # print(count_image)
@@ -293,7 +294,7 @@ def negative_get_masked_image():
         candidates_list.append(coord_y)
         candidates_list.append(coord_z)
 
-        with open('data/LUNA16/masked/negative/negative_anno.csv', 'a') as f:
+        with open('data/LUNA16/negative/masked/negative_anno.csv', 'a') as f:
             writer = csv.writer(f)
             writer.writerow(candidates_list)
 
@@ -302,7 +303,10 @@ def negative_get_masked_image():
         if count_image == 10000:
             break
     print('')
-    print('output:data/LUNA16/masked/negative/')
+    print(
+        'output:\n'
+        'data/LUNA16/negative/masked/negative_anno.csv\n'
+        'data/LUNA16/negative/masked/JPEGImages/')
 
 def get_voc_anno():
     def beatau(e,level=0):
@@ -518,6 +522,221 @@ def get_voc_anno():
 
             # save .xml
             write_xml(tree, "data\LUNA16\masked\Annotations\{:06d}.xml".format(min(list_count_image)))
+
+def negative_get_voc_anno():
+    def beatau(e,level=0):
+        if len(e) > 0:
+            e.text='\n'+'\t'*(level+1)
+            for child in e:
+                beatau(child,level+1)
+            child.tail=child.tail[:-1]
+        e.tail='\n' + '\t'*level
+    
+    def to_xml(name, list_x, list_y, list_w, list_h):
+        root = Element('annotation')#根节点
+        erow1 = Element('folder')#节点1
+        erow1.text= "VOC"
+        
+        
+        erow2 = Element('filename')#节点2
+        erow2.text= str(name)
+        
+        erow3 = Element('size')#节点3
+        erow31 = Element('width')
+        erow31.text = "512"
+        erow32 = Element('height')
+        erow32.text = "512"
+        erow33 = Element('depth')
+        erow33.text = "3" 
+        erow3.append(erow31)
+        erow3.append(erow32)
+        erow3.append(erow33)
+
+        root.append(erow1)
+        root.append(erow2)
+        root.append(erow3)
+
+        for x, y, w, h in zip(list_x, list_y, list_w, list_h):
+            erow4 = Element('object')
+            
+            erow41 = Element('name')
+            erow41.text = 'nodule'
+
+            erow4_pos = Element('pose')
+            erow4_pos.text = 'Unspecified'
+
+            erow4_tru = Element('truncated')
+            erow4_tru.text = '0'
+
+            erow4_dif = Element('difficult')
+            erow4_dif.text = '0'
+
+            erow42 = Element('bndbox')
+
+            erow4.append(erow41)
+            erow4.append(erow4_pos)
+            erow4.append(erow4_tru)
+            erow4.append(erow4_dif)
+            erow4.append(erow42)
+
+            erow421 = Element('xmin')
+            erow421.text = str(x - np.round(w/2).astype(int))
+
+            erow422 = Element('ymin')
+            erow422.text = str(y - np.round(h/2).astype(int))
+
+            erow423 = Element('xmax')
+            erow423.text = str(x + np.round(w/2).astype(int))
+
+            erow424 = Element('ymax')
+            erow424.text = str(y + np.round(h/2).astype(int))
+
+            erow42.append(erow421)
+            erow42.append(erow422)
+            erow42.append(erow423)
+            erow42.append(erow424)
+
+            root.append(erow4)
+
+        beatau(root)      
+
+        return ElementTree(root)
+
+    def write_xml(tree, out_path):  
+        '''''将xml文件写出 
+        tree: xml树 
+        out_path: 写出路径'''  
+        tree.write(out_path, encoding="utf-8",xml_declaration=True)
+
+    pd_annotation = pd.read_csv(negative_anno_path)
+
+    seriesuid_temp = None
+    nodule_uid_list = []
+    nodule_dict_list = []
+
+    count_image = 0
+    print('output: data\\LUNA16\\negative\\masked\\Annotations\\')
+    for each_annotation in pd_annotation.iterrows():
+        seriesuid = each_annotation[1].seriesuid
+        coord_x = each_annotation[1].coordX
+        coord_y = each_annotation[1].coordY
+        coord_z = each_annotation[1].coordZ
+        diameter_mm = each_annotation[1].diameter_mm
+
+        mhd_name = '{}.mhd'.format(seriesuid)
+
+        try:
+            mhd_path = glob(os.path.join(working_path, '*', mhd_name), recursive=True)[0]
+        except IndexError:
+            print(
+                'no LUNA16 data.\n'
+                'set ssd to usb.')
+            sys.exit(0)
+            
+        numpyImage, numpyOrigin, numpySpacing = load_itk_image(mhd_path) # numpyImage.shape) 维度为(slice,w,h)
+
+        # 将世界坐标下肺结节标注转换为真实坐标系下的坐标标注
+        worldCoord = np.asarray([float(coord_x),float(coord_y),float(coord_z)])
+        voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
+    
+        slice = int(voxelCoord[2] + 0.5)
+
+        if args.nodule_size == 0: # dynamic
+            nodule_dict = {
+                'slice': slice,
+                'x': int(voxelCoord[0] + 0.5),
+                'y': int(voxelCoord[1] + 0.5),
+                'w': int(diameter_mm / numpySpacing[0] * args.bigger_size + 0.5),
+                'h': int(diameter_mm / numpySpacing[1] * args.bigger_size + 0.5),
+                'count_image': count_image,
+            }
+        else:
+            nodule_dict = {
+                'slice': slice,
+                'x': int(voxelCoord[0] + 0.5),
+                'y': int(voxelCoord[1] + 0.5),
+                'w': args.nodule_size * args.bigger_size,
+                'h': args.nodule_size * args.bigger_size,
+                'count_image': count_image,
+            }
+
+        if args.debug:
+            masked_image_dir = 'data/LUNA16/negative/masked/JPEGImages'
+            name_image = '{:06d}.png'.format(nodule_dict['count_image'])
+            masked_image_path = os.path.join(masked_image_dir, name_image)
+            masked_image = cv2.imread(masked_image_path)
+            cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+            point_left_up = (int(nodule_dict['x'] - nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] - nodule_dict['h'] / 2 + 0.5))
+            point_right_down = (int(nodule_dict['x'] + nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] + nodule_dict['h'] / 2 + 0.5))
+            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 1)
+            cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+        # 针对第一个元素的处理
+        if seriesuid_temp == None:
+            nodule_dict_list.append(nodule_dict)
+            seriesuid_temp = seriesuid
+
+        else:
+            if seriesuid_temp == seriesuid:
+                nodule_dict_list.append(nodule_dict) # nodule_dict_list 增添元素 nodule_dict
+            
+            else:
+                nodule_uid_list.append(nodule_dict_list) # nodule_uid_list 增添元素 nodule_dict_list
+
+                nodule_dict_list = [] # 不能使用 nodule_dict_list.clear(), 会清空引用
+                nodule_dict_list.append(nodule_dict) # 清空nodule_dict_list后，加入新uid的结节
+
+                seriesuid_temp = seriesuid # 准备处理下一轮不同uid的结节数据
+
+        print('\rplease wait... {:.2%}'.format((count_image + 1) / 10000), end='', flush=True)
+        count_image +=1
+    
+    # 末尾数据的处理
+    nodule_uid_list.append(nodule_dict_list)
+
+    # loop nodule_uid_list
+    for each_nodule_dict_list in nodule_uid_list:
+
+        # get list of slice
+        list_slice = []
+        for each_nodule_dict in each_nodule_dict_list:
+            if not each_nodule_dict['slice'] in list_slice:
+                list_slice.append(each_nodule_dict['slice'])
+
+        # make .xml for each nodule
+        for each_slice in list_slice:
+
+            list_nodule = []
+            list_x = []
+            list_y = []
+            list_w = []
+            list_h = []
+            list_count_image = []
+
+            for each_nodule_dict in each_nodule_dict_list:
+                if each_nodule_dict['slice'] == each_slice:
+                    list_nodule.append(each_nodule_dict)
+
+            for each_nodule in list_nodule:
+                list_x.append(each_nodule['x'])
+                list_y.append(each_nodule['y'])
+                list_h.append(each_nodule['h'])
+                list_w.append(each_nodule['w'])
+                list_count_image.append(each_nodule['count_image'])
+
+            # make .xml
+            name_image = '{}.png'.format(min(list_count_image))
+            tree = to_xml(
+                name=name_image,
+                list_x=list_x,
+                list_y=list_y,
+                list_w=list_w,
+                list_h=list_h
+            )
+
+            # save .xml
+            write_xml(tree, "data/LUNA16/negative/masked/Annotations/{:06d}.xml".format(min(list_count_image)))
 
 def check_multi_nodule():
     pd_annotation = pd.read_csv(anno_path)
