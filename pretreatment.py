@@ -561,7 +561,7 @@ def negative_get_voc_anno():
             erow4 = Element('object')
             
             erow41 = Element('name')
-            erow41.text = 'nodule'
+            erow41.text = 'nonnodule'
 
             erow4_pos = Element('pose')
             erow4_pos.text = 'Unspecified'
@@ -617,7 +617,7 @@ def negative_get_voc_anno():
     nodule_uid_list = []
     nodule_dict_list = []
 
-    count_image = 0
+    count_image = 100000 # 100000开始为“非结节”
     print('output: data\\LUNA16\\negative\\masked\\Annotations\\')
     for each_annotation in pd_annotation.iterrows():
         seriesuid = each_annotation[1].seriesuid
@@ -681,8 +681,8 @@ def negative_get_voc_anno():
 
                 seriesuid_temp = seriesuid # 准备处理下一轮不同uid的结节数据
 
-        print('\rplease wait... {:.2%}'.format((count_image + 1) / 10000), end='', flush=True)
         count_image +=1
+        print('\rplease wait... {:.2%}'.format((count_image - 100000) / 10000), end='', flush=True)
     
     # 末尾数据的处理
     nodule_uid_list.append(nodule_dict_list)
