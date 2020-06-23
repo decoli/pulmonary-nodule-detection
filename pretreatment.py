@@ -29,6 +29,7 @@ parser.add_argument(
         'get_masked_image',
         'negative_get_masked_image',
         'get_voc_anno',
+        'negative_get_voc_anno',
         'check_multi_nodule',
         'get_main_txt',
         ],help='set the run mode'
@@ -817,3 +818,5 @@ if __name__ == '__main__':
         check_multi_nodule()
     elif args.mode == 'get_main_txt':
         get_main_txt()
+    elif args.mode == 'negative_get_voc_anno':
+        negative_get_voc_anno()
