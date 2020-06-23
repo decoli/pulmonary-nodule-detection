@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
-parser.add_argument('--nodule_size', default=0, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
+parser.add_argument('--nodule_size', default=32, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
 parser.add_argument('--bigger_size', default=1, type=float, help=' set the GT size bigger')
 
 parser.add_argument(
@@ -610,6 +610,8 @@ def negative_get_voc_anno():
         tree.write(out_path, encoding="utf-8",xml_declaration=True)
 
     pd_annotation = pd.read_csv(negative_anno_path)
+    # pd_annotation = pd_annotation.sort_values(by='seriesuid')
+    # pd_annotation.to_csv('data/LUNA16/negative/negative_anno_sorted_seriesuid.csv',index=0)
 
     seriesuid_temp = None
     nodule_uid_list = []
@@ -659,7 +661,7 @@ def negative_get_voc_anno():
 
             point_left_up = (int(nodule_dict['x'] - nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] - nodule_dict['h'] / 2 + 0.5))
             point_right_down = (int(nodule_dict['x'] + nodule_dict['w'] / 2 + 0.5), int(nodule_dict['y'] + nodule_dict['h'] / 2 + 0.5))
-            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 3)
+            cv2.rectangle(masked_image, point_left_up, point_right_down, (0, 0, 255), 1)
             cv2.imwrite('test/test.png', masked_image, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
         # 针对第一个元素的处理
