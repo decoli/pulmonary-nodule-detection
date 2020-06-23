@@ -301,7 +301,8 @@ def negative_get_masked_image():
         print('\rplease wait... {:.2%}'.format(count_image / 10000), end='', flush=True)
         if count_image == 10000:
             break
-    print('complete.')
+    print('')
+    print('output:data/LUNA16/masked/negative/')
 
 def get_voc_anno():
     def beatau(e,level=0):
