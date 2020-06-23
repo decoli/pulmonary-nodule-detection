@@ -432,8 +432,9 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
                         cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                         print(scores[k])
-        print('im_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
-                                                    num_images, detect_time))
+        print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
+                                                    num_images, detect_time), end='', flush=True)
+    print('')
 
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
