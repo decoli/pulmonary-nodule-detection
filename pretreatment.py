@@ -35,7 +35,10 @@ parser.add_argument(
         'get_voc_anno',
         'negative_get_voc_anno',
         'check_multi_nodule',
+
+        # get text.txt/trainval.txt in ImageSets/Main
         'get_main_txt',
+        'negative_get_main_txt',
         ],help='set the run mode'
     )
 
@@ -810,6 +813,19 @@ def get_main_txt():
         f.write('{:06d}\n'.format(i))
     f.close()
 
+def negative_get_main_txt():
+
+    list_trainval = list(range(100000, 110000))
+    test_path = os.path.join('data', 'LUNA16', 'negative', 'masked', 'ImageSets', 'Main', 'negative_trainval.txt')
+    f=open(test_path,'w')
+    for i in list_trainval:
+        f.write('{:06d}\n'.format(i))
+    f.close()
+    print(
+        'output: {}\n'
+        'copy and paste the context to:'
+        'data/LUNA16/masked/ImageSets/Main/trainval.txt'.format(test_path))
+
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
         get_masked_image()
@@ -826,3 +842,5 @@ if __name__ == '__main__':
         get_main_txt()
     elif args.mode == 'negative_get_voc_anno':
         negative_get_voc_anno()
+    elif args.mode == 'negative_get_main_txt':
+        negative_get_main_txt()
