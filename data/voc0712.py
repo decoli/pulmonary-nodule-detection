@@ -23,7 +23,8 @@ VOC_CLASSES = (  # always index 0
     # 'cow', 'diningtable', 'dog', 'horse',
     # 'motorbike', 'person', 'pottedplant',
     # 'sheep', 'sofa', 'train', 'tvmonitor')
-    'nodule',)
+    'nodule',
+    'nonnodule',)
 
     # 1.'aeroplane',
     # 2.'bicycle',
