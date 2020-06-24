@@ -26,8 +26,12 @@ parser.add_argument('--bigger_size', default=1, type=float, help=' set the GT si
 
 parser.add_argument(
     '--mode',choices=[
+
+        # make the image to feed the model
         'get_masked_image',
         'negative_get_masked_image',
+        'negative_masked_image_rename',
+
         'get_voc_anno',
         'negative_get_voc_anno',
         'check_multi_nodule',
@@ -283,7 +287,7 @@ def negative_get_masked_image():
         axes = fig.add_axes([0, 0, 1, 1])
         axes.set_axis_off()
         axes.imshow(img*mask, cmap='gray')
-        path_img = os.path.join('data/LUNA16/negative/masked/Annotations/{:06d}.png'.format(count_image))
+        path_img = os.path.join('data/LUNA16/negative/masked/Annotations/{:06d}.png'.format(count_image + 100000))
         fig.savefig(path_img)
         plt.close()
         # print(count_image)
@@ -308,6 +312,15 @@ def negative_get_masked_image():
         'output:\n'
         'data/LUNA16/negative/masked/negative_anno.csv\n'
         'data/LUNA16/negative/masked/JPEGImages/')
+
+def negative_masked_image_rename():
+    negative_masked_image_dir = 'data/LUNA16/negative/masked/JPEGImages'
+    negative_masked_image_path_list = glob(os.path.join(negative_masked_image_dir, '*.png'))
+    for each_image_path in negative_masked_image_path_list:
+        image_name = int(os.path.basename(each_image_path).split('.')[0])
+        image_rename = '{}.png'.format(int(image_name) + 100000)
+        image_rename_path = os.path.join(negative_masked_image_dir, image_rename)
+        os.rename(each_image_path, image_rename_path)
 
 def get_voc_anno():
     def beatau(e,level=0):
@@ -802,7 +815,9 @@ if __name__ == '__main__':
         get_masked_image()
     elif args.mode == 'negative_get_masked_image':
         negative_get_masked_image()
-    
+    elif args.mode == 'negative_masked_image_rename':
+        negative_masked_image_rename()
+
     elif args.mode == 'get_voc_anno':
         get_voc_anno()
     elif args.mode == 'check_multi_nodule':
