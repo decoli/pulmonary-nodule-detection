@@ -214,16 +214,17 @@ base = {
 }
 extras = {
     '300': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256],
-    '512': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256, 128, 256],
+    # '512': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256, 128, 256],
+    '512': [],
 }
 # 特徴マップ毎のアスペクト比の数
 mbox = {
     '300': [4, 6, 6, 6, 4, 4],  # number of boxes per feature map location
-    '512': [4, 6, 6, 6, 6, 4, 4],
+    '512': [4, 4, 4, 4],
 }
 
 # ネットワークのリスト作成
-def build_ssd(phase, size=300, num_classes=21):
+def build_ssd(phase, size=512, num_classes=21):
     if phase != "test" and phase != "train":
         print("ERROR: Phase: " + phase + " not recognized")
         return
