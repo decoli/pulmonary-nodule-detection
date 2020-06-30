@@ -25,3 +25,4 @@ data/LUNA16/csdn_VOC.zip
 weights/*
 data/LUNA16/negative/
 !data/LUNA16/negative/negative_anno.csv
+data/LUNA16/masked.zip
