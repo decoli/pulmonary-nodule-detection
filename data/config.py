@@ -31,6 +31,7 @@ voc = {
     'variance': [0.1, 0.2],
     'clip': True,
     'name': 'VOC',
+    'feature_index': [8, 15, 22, 29],
 }
 
 coco = {

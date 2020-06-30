@@ -55,7 +55,7 @@ class SSD(nn.Module):
             # PyTorch1.5.0 support new-style autograd function
 
     # 順伝播
-    def forward(self, x):
+    def forward(self, x, feature_index):
         """Applies network layers and ops on input image(s) x.
         Args:
             x: input image or batch of images. Shape: [batch,3,300,300].
@@ -76,26 +76,27 @@ class SSD(nn.Module):
         conf = list()
 
         # apply vgg up to conv4_3 relu
-        for k in range(23):
+        for k in range(len(self.vgg)):
             x = self.vgg[k](x).detach()
             # print(torch.cuda.memory_allocated() / 1024**2)
-        # Conv4-3>Reluの計算結果にL2Normを適用しsourcesに追加
-        s = self.L2Norm(x)
-        sources.append(s)
+        # # Conv4-3>Reluの計算結果にL2Normを適用しsourcesに追加
+        # s = self.L2Norm(x)
+            if k in feature_index:
+                sources.append(x)
 
-        # apply vgg up to fc7
-        for k in range(23, len(self.vgg)):
-            x = self.vgg[k](x)
-        # Conv7>Reluの計算結果をsourcesに追加
-        sources.append(x)
+        # # apply vgg up to fc7
+        # for k in range(23, len(self.vgg)):
+        #     x = self.vgg[k](x)
+        # # Conv7>Reluの計算結果をsourcesに追加
+        # sources.append(x)
 
         # 追加ネットワークにrelu関数を追加し順伝播
         # 奇数番目の層の計算結果をsourcesに追加
         # apply extra layers and cache source layer outputs
-        for k, v in enumerate(self.extras):
-            x = F.relu(v(x), inplace=True)
-            if k % 2 == 1:
-                sources.append(x)
+        # for k, v in enumerate(self.extras):
+        #     x = F.relu(v(x), inplace=True)
+        #     if k % 2 == 1:
+        #         sources.append(x)
 
         # apply multibox head to source layers
         for (x, l, c) in zip(sources, self.loc, self.conf):
@@ -156,11 +157,11 @@ def vgg(cfg, i, batch_norm=False):
             else:
                 layers += [conv2d, nn.ReLU(inplace=True)]
             in_channels = v
-    pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
-    conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)
-    conv7 = nn.Conv2d(1024, 1024, kernel_size=1)
-    layers += [pool5, conv6,
-               nn.ReLU(inplace=True), conv7, nn.ReLU(inplace=True)]
+    # pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
+    # conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)
+    # conv7 = nn.Conv2d(1024, 1024, kernel_size=1)
+    # layers += [pool5, conv6,
+    #            nn.ReLU(inplace=True), conv7, nn.ReLU(inplace=True)]
     return layers
 
 
@@ -183,26 +184,39 @@ def add_extras(cfg, i, batch_norm=False):
     return layers
 
 # オフセット、確信度のネットワークのリスト作成
-def multibox(vgg, extra_layers, cfg, num_classes):
+def multibox(vgg, extra_layers, cfg, num_classes, feature_index):
     loc_layers = []
     conf_layers = []
-    vgg_source = [21, -2]
-    # ベースの21のConv4-3と-2(最後から2番目)のConv7を特徴マップのリストに追加
-    for k, v in enumerate(vgg_source):
-        # 出力層の数はアスペクト比の数×座標数
-        loc_layers += [nn.Conv2d(
-            vgg[v].out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
-        # 出力層の数はアスペクト比の数×クラス数
-        conf_layers += [nn.Conv2d(
-            vgg[v].out_channels,cfg[k] * num_classes,kernel_size=3,padding=1)]
-    # 追加ネットの内、奇数番目の層を特徴マップのリストに追加
-    for k, v in enumerate(extra_layers[1::2], 2):
-        # 出力層の数はアスペクト比の数×座標数
-        loc_layers += [nn.Conv2d(
-            v.out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
-        # 出力層の数はアスペクト比の数×クラス数
-        conf_layers += [nn.Conv2d(
-            v.out_channels,cfg[k] * num_classes,kernel_size=3, padding=1)]
+    count_index = 0
+
+    # vgg_source = [21, -2]
+    # # ベースの21のConv4-3と-2(最後から2番目)のConv7を特徴マップのリストに追加
+    # for k, v in enumerate(vgg_source):
+    #     # 出力層の数はアスペクト比の数×座標数
+    #     loc_layers += [nn.Conv2d(
+    #         vgg[v].out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
+    #     # 出力層の数はアスペクト比の数×クラス数
+    #     conf_layers += [nn.Conv2d(
+    #         vgg[v].out_channels,cfg[k] * num_classes,kernel_size=3,padding=1)]
+    # # 追加ネットの内、奇数番目の層を特徴マップのリストに追加
+    # for k, v in enumerate(extra_layers[1::2], 2):
+    #     # 出力層の数はアスペクト比の数×座標数
+    #     loc_layers += [nn.Conv2d(
+    #         v.out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
+    #     # 出力層の数はアスペクト比の数×クラス数
+    #     conf_layers += [nn.Conv2d(
+    #         v.out_channels,cfg[k] * num_classes,kernel_size=3, padding=1)]
+
+    for k in range(len(vgg)):
+        if k in feature_index:
+            loc_layers += [nn.Conv2d(
+                vgg[k - 1].out_channels,cfg[count_index] * 4,kernel_size=3,padding=1)]
+            # 出力層の数はアスペクト比の数×クラス数
+            conf_layers += [nn.Conv2d(
+                vgg[k - 1].out_channels,cfg[count_index] * num_classes,kernel_size=3,padding=1)]
+
+            count_index += 1
+
     return vgg, extra_layers, (loc_layers, conf_layers)
 
 # 数字は入力チャンネル、M,Cはプーリング、Sはstride=2
@@ -235,5 +249,6 @@ def build_ssd(phase, size=512, num_classes=21):
     # ベース、追加、オフセット、確信度のネットワークリストはクラスSSDの引数
     base_, extras_, head_ = multibox(vgg(base[str(size)], 3),
                                      add_extras(extras[str(size)], 1024),
-                                     mbox[str(size)], num_classes)
+                                     mbox[str(size)], num_classes,
+                                     voc['feature_index'],)
     return SSD(phase, size, base_, extras_, head_, num_classes)

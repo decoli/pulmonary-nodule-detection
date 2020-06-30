@@ -117,9 +117,9 @@ def train():
     else:
         resume_flag_iteration = False
         resume_flag_epoch = False
-        vgg_weights = torch.load(args.save_folder + args.basenet)
-        print('Loading base network...')
-        ssd_net.vgg.load_state_dict(vgg_weights)
+        # vgg_weights = torch.load(args.save_folder + args.basenet)
+        # print('Loading base network...')
+        # ssd_net.vgg.load_state_dict(vgg_weights)
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -201,7 +201,7 @@ def train():
             # targets = [torch.tensor(ann) for ann in targets]
         # forward
         t0 = time.time()
-        out = net(images)
+        out = net(images, cfg['feature_index'])
         # backprop
         optimizer.zero_grad()
         loss_l, loss_c = criterion(out, targets)
