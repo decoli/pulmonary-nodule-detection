@@ -40,8 +40,8 @@ class SSD(nn.Module):
         # SSD network
         self.vgg = nn.ModuleList(base)
         # Layer learns to scale the l2 normalized features from conv4_3
-        self.L2Norm = L2Norm(512, 20)
-        self.extras = nn.ModuleList(extras)
+        # self.L2Norm = L2Norm(512, 20)
+        # self.extras = nn.ModuleList(extras)
         # オフセットと確信度のネットワークリスト
         self.loc = nn.ModuleList(head[0])
         self.conf = nn.ModuleList(head[1])
@@ -238,7 +238,7 @@ mbox = {
 }
 
 # ネットワークのリスト作成
-def build_ssd(phase, size=512, num_classes=21):
+def build_ssd(phase, size=512, num_classes=2):
     if phase != "test" and phase != "train":
         print("ERROR: Phase: " + phase + " not recognized")
         return

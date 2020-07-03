@@ -102,7 +102,7 @@ class ToPercentCoords(object):
 
 
 class Resize(object):
-    def __init__(self, size=300):
+    def __init__(self, size=512):
         self.size = size
 
     def __call__(self, image, boxes=None, labels=None):
@@ -398,7 +398,7 @@ class PhotometricDistort(object):
 
 
 class SSDAugmentation(object):
-    def __init__(self, size=300, mean=(104, 117, 123)):
+    def __init__(self, size=512, mean=(104, 117, 123)):
         self.mean = mean
         self.size = size
         self.augment = Compose([
@@ -406,7 +406,7 @@ class SSDAugmentation(object):
             ToAbsoluteCoords(),
             PhotometricDistort(),
             Expand(self.mean),
-            RandomSampleCrop(),
+            # RandomSampleCrop(),
             RandomMirror(),
             ToPercentCoords(),
             Resize(self.size),
