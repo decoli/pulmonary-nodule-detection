@@ -49,7 +49,7 @@ args = parser.parse_args()
 if os.name == 'posix':
     working_path = '/Volumes/shirui_WD_2/lung_image/all_LUNA16/LUNA16'
 else:
-    working_path = 'G:\lung_image\\all_LUNA16\\LUNA16'
+    working_path = 'E:\lung_image\\all_LUNA16\\LUNA16'
 
 cand_path = 'data/LUNA16/candidates.csv'
 anno_path = 'data/LUNA16/annotations.csv'
@@ -825,6 +825,9 @@ def negative_get_main_txt():
         'output: {}\n'
         'copy and paste the context to:'
         'data/LUNA16/masked/ImageSets/Main/trainval.txt'.format(test_path))
+
+def augmentation_move(): # 移动原结节在CT图像中的位置
+    pass
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
