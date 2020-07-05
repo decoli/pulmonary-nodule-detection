@@ -24,7 +24,7 @@ class SSD(nn.Module):
         head: "multibox head" consists of loc and conf conv layers
     """
 
-    def __init__(self, phase, size, base, extras, head, num_classes):
+    def __init__(self, phase, size, base, num_classes):
         super(SSD, self).__init__()
         self.phase = phase
         self.num_classes = num_classes
@@ -37,14 +37,60 @@ class SSD(nn.Module):
         # handbook
         self.size = size
 
+        loc_layers = []
+        conf_layers = []
+
         # SSD network
-        self.vgg = nn.ModuleList(base)
+        self.conv_1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv_1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.max_pool_1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_1 = nn.Conv2d(64, 4*4,kernel_size=3,padding=1)
+        multibox_conf_1 = nn.Conv2d(64, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_1)
+        conf_layers.append(multibox_conf_1)
+
+        self.conv_2_1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv_2_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+        self.max_pool_2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_2 = nn.Conv2d(128, 4*4,kernel_size=3,padding=1)
+        multibox_conf_2 = nn.Conv2d(128, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_2)
+        conf_layers.append(multibox_conf_2)
+
+        self.conv_3_1 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
+        self.conv_3_2 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.conv_3_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.max_pool_3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_3 = nn.Conv2d(256, 4*4,kernel_size=3,padding=1)
+        multibox_conf_3 = nn.Conv2d(256, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_3)
+        conf_layers.append(multibox_conf_3)
+
+        self.conv_4_1 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
+        self.conv_4_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_4_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.max_pool_4 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_4 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
+        multibox_conf_4 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_4)
+        conf_layers.append(multibox_conf_4)
+
+        self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
+        multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_5)
+        conf_layers.append(multibox_conf_5)
+
+        # self.vgg = nn.ModuleList(base)
         # Layer learns to scale the l2 normalized features from conv4_3
         # self.L2Norm = L2Norm(512, 20)
         # self.extras = nn.ModuleList(extras)
         # オフセットと確信度のネットワークリスト
-        self.loc = nn.ModuleList(head[0])
-        self.conf = nn.ModuleList(head[1])
+        self.loc = nn.ModuleList(loc_layers)
+        self.conf = nn.ModuleList(conf_layers)
 
         # demo実行時
         if phase == 'test':
@@ -55,7 +101,7 @@ class SSD(nn.Module):
             # PyTorch1.5.0 support new-style autograd function
 
     # 順伝播
-    def forward(self, x, feature_index):
+    def forward(self, x):
         """Applies network layers and ops on input image(s) x.
         Args:
             x: input image or batch of images. Shape: [batch,3,300,300].
@@ -75,28 +121,44 @@ class SSD(nn.Module):
         loc = list()
         conf = list()
 
-        # apply vgg up to conv4_3 relu
-        for k in range(len(self.vgg)):
-            x = self.vgg[k](x).detach()
-            # print(torch.cuda.memory_allocated() / 1024**2)
-        # # Conv4-3>Reluの計算結果にL2Normを適用しsourcesに追加
-        # s = self.L2Norm(x)
-            if k in feature_index:
-                sources.append(x)
+        x = self.conv_1_1(x)
+        x = self.conv_1_2(x)
+        x = self.max_pool_1(x)
+        x = F.relu(x, inplace=True)
+        feature_map_1 = x
 
-        # # apply vgg up to fc7
-        # for k in range(23, len(self.vgg)):
-        #     x = self.vgg[k](x)
-        # # Conv7>Reluの計算結果をsourcesに追加
-        # sources.append(x)
+        x = self.conv_2_1(x)
+        x = self.conv_2_2(x)
+        x = self.max_pool_2(x)
+        x = F.relu(x, inplace=True)
+        feature_map_2 = x
 
-        # 追加ネットワークにrelu関数を追加し順伝播
-        # 奇数番目の層の計算結果をsourcesに追加
-        # apply extra layers and cache source layer outputs
-        # for k, v in enumerate(self.extras):
-        #     x = F.relu(v(x), inplace=True)
-        #     if k % 2 == 1:
-        #         sources.append(x)
+        x = self.conv_3_1(x)
+        x = self.conv_3_2(x)
+        x = self.conv_3_3(x)
+        x = self.max_pool_3(x)
+        x = F.relu(x, inplace=True)
+        feature_map_3 = x
+
+        x = self.conv_4_1(x)
+        x = self.conv_4_2(x)
+        x = self.conv_4_3(x)
+        x = self.max_pool_4(x)
+        x = F.relu(x, inplace=True)
+        feature_map_4 = x
+
+        x = self.conv_5_1(x)
+        x = self.conv_5_2(x)
+        x = self.conv_5_3(x)
+        x = self.max_pool_5(x)
+        x = F.relu(x, inplace=True)
+        feature_map_5 = x
+
+        sources.append(feature_map_1)
+        sources.append(feature_map_2)
+        sources.append(feature_map_3)
+        sources.append(feature_map_4)
+        sources.append(feature_map_5)
 
         # apply multibox head to source layers
         for (x, l, c) in zip(sources, self.loc, self.conf):
@@ -136,104 +198,8 @@ class SSD(nn.Module):
         else:
             print('Sorry only .pth and .pkl files supported.')
 
-
-# This function is derived from torchvision VGG make_layers()
-# https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py
-# ベースネットワークのリスト作成
-def vgg(cfg, i, batch_norm=False):
-    layers = []
-    in_channels = i
-    for v in cfg:
-        # プーリング層　300×300　→　150×150
-        if v == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-        # プーリング層で小数点切り上げ　75×75 →　38×38
-        elif v == 'C':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2, ceil_mode=True)]
-        else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-            if batch_norm:
-                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
-            else:
-                layers += [conv2d, nn.ReLU(inplace=True)]
-            in_channels = v
-    # pool5 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
-    # conv6 = nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6)
-    # conv7 = nn.Conv2d(1024, 1024, kernel_size=1)
-    # layers += [pool5, conv6,
-    #            nn.ReLU(inplace=True), conv7, nn.ReLU(inplace=True)]
-    return layers
-
-
-# 追加ネットワークのリスト作成
-def add_extras(cfg, i, batch_norm=False):
-    # Extra layers added to VGG for feature scaling
-    layers = []
-    in_channels = i
-    flag = False
-    for k, v in enumerate(cfg):
-        if in_channels != 'S':
-            if v == 'S':
-                # strideが2
-                layers += [nn.Conv2d(in_channels, cfg[k + 1],
-                           kernel_size=(1, 3)[flag], stride=2, padding=1)]
-            else:
-                layers += [nn.Conv2d(in_channels, v, kernel_size=(1, 3)[flag])]
-            flag = not flag
-        in_channels = v
-    return layers
-
-# オフセット、確信度のネットワークのリスト作成
-def multibox(vgg, extra_layers, cfg, num_classes, feature_index):
-    loc_layers = []
-    conf_layers = []
-    count_index = 0
-
-    # vgg_source = [21, -2]
-    # # ベースの21のConv4-3と-2(最後から2番目)のConv7を特徴マップのリストに追加
-    # for k, v in enumerate(vgg_source):
-    #     # 出力層の数はアスペクト比の数×座標数
-    #     loc_layers += [nn.Conv2d(
-    #         vgg[v].out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
-    #     # 出力層の数はアスペクト比の数×クラス数
-    #     conf_layers += [nn.Conv2d(
-    #         vgg[v].out_channels,cfg[k] * num_classes,kernel_size=3,padding=1)]
-    # # 追加ネットの内、奇数番目の層を特徴マップのリストに追加
-    # for k, v in enumerate(extra_layers[1::2], 2):
-    #     # 出力層の数はアスペクト比の数×座標数
-    #     loc_layers += [nn.Conv2d(
-    #         v.out_channels,cfg[k] * 4,kernel_size=3,padding=1)]
-    #     # 出力層の数はアスペクト比の数×クラス数
-    #     conf_layers += [nn.Conv2d(
-    #         v.out_channels,cfg[k] * num_classes,kernel_size=3, padding=1)]
-
-    for k in range(len(vgg)):
-        if k in feature_index:
-            loc_layers += [nn.Conv2d(
-                vgg[k - 1].out_channels,cfg[count_index] * 4,kernel_size=3,padding=1)]
-            # 出力層の数はアスペクト比の数×クラス数
-            conf_layers += [nn.Conv2d(
-                vgg[k - 1].out_channels,cfg[count_index] * num_classes,kernel_size=3,padding=1)]
-
-            count_index += 1
-
-    return vgg, extra_layers, (loc_layers, conf_layers)
-
-# 数字は入力チャンネル、M,Cはプーリング、Sはstride=2
-base = {
-    '300': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'C', 512, 512, 512, 'M',
-            512, 512, 512],
-    '512': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'C', 512, 512, 512, 'M',
-            512, 512, 512],
-}
-extras = {
-    '300': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256],
-    # '512': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256, 128, 256],
-    '512': [],
-}
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '300': [4, 6, 6, 6, 4, 4],  # number of boxes per feature map location
     '512': [4, 4, 4, 4],
 }
 
@@ -242,13 +208,5 @@ def build_ssd(phase, size=512, num_classes=2):
     if phase != "test" and phase != "train":
         print("ERROR: Phase: " + phase + " not recognized")
         return
-    # if size != 300:
-    #     print("ERROR: You specified size " + repr(size) + ". However, " +
-    #           "currently only SSD300 (size=300) is supported!")
-    #     return
-    # ベース、追加、オフセット、確信度のネットワークリストはクラスSSDの引数
-    base_, extras_, head_ = multibox(vgg(base[str(size)], 3),
-                                     add_extras(extras[str(size)], 1024),
-                                     mbox[str(size)], num_classes,
-                                     voc['feature_index'],)
-    return SSD(phase, size, base_, extras_, head_, num_classes)
+
+    return SSD(phase, size, mbox[str(size)], num_classes)

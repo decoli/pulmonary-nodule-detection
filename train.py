@@ -201,7 +201,7 @@ def train():
             # targets = [torch.tensor(ann) for ann in targets]
         # forward
         t0 = time.time()
-        out = net(images, cfg['feature_index'])
+        out = net(images)
         # backprop
         optimizer.zero_grad()
         loss_l, loss_c = criterion(out, targets)
