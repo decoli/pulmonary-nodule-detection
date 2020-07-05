@@ -75,14 +75,14 @@ class SSD(nn.Module):
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
-        multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
-        loc_layers.append(multibox_loc_5)
-        conf_layers.append(multibox_conf_5)
+        # self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        # self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        # self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        # self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
+        # multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
+        # multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        # loc_layers.append(multibox_loc_5)
+        # conf_layers.append(multibox_conf_5)
 
         # self.vgg = nn.ModuleList(base)
         # Layer learns to scale the l2 normalized features from conv4_3
@@ -147,18 +147,18 @@ class SSD(nn.Module):
         x = F.relu(x, inplace=True)
         feature_map_4 = x
 
-        x = self.conv_5_1(x)
-        x = self.conv_5_2(x)
-        x = self.conv_5_3(x)
-        x = self.max_pool_5(x)
-        x = F.relu(x, inplace=True)
-        feature_map_5 = x
+        # x = self.conv_5_1(x)
+        # x = self.conv_5_2(x)
+        # x = self.conv_5_3(x)
+        # x = self.max_pool_5(x)
+        # x = F.relu(x, inplace=True)
+        # feature_map_5 = x
 
         sources.append(feature_map_1)
         sources.append(feature_map_2)
         sources.append(feature_map_3)
         sources.append(feature_map_4)
-        sources.append(feature_map_5)
+        # sources.append(feature_map_5)
 
         # apply multibox head to source layers
         for (x, l, c) in zip(sources, self.loc, self.conf):
@@ -200,7 +200,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [4, 4, 4, 4],
+    '512': [2, 2, 2, 2],
 }
 
 # ネットワークのリスト作成
