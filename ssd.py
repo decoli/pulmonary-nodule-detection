@@ -41,19 +41,23 @@ class SSD(nn.Module):
         conf_layers = []
 
         # SSD network
+        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
+
         self.conv_1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         self.conv_1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.max_pool_1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_1 = nn.Conv2d(64, 4*4,kernel_size=3,padding=1)
-        multibox_conf_1 = nn.Conv2d(64, 4*2,kernel_size=3,padding=1)
+        self.conv_1 = nn.Conv2d(64, 128, kernel_size=1, padding=0)
+        multibox_loc_1 = nn.Conv2d(128, 4*4,kernel_size=3,padding=1)
+        multibox_conf_1 = nn.Conv2d(128, 4*2,kernel_size=3,padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
         self.conv_2_1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
         self.conv_2_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
         self.max_pool_2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_2 = nn.Conv2d(128, 4*4,kernel_size=3,padding=1)
-        multibox_conf_2 = nn.Conv2d(128, 4*2,kernel_size=3,padding=1)
+        self.conv_2 = nn.Conv2d(128, 256, kernel_size=1, padding=0)
+        multibox_loc_2 = nn.Conv2d(256, 4*4,kernel_size=3,padding=1)
+        multibox_conf_2 = nn.Conv2d(256, 4*2,kernel_size=3,padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
@@ -61,8 +65,9 @@ class SSD(nn.Module):
         self.conv_3_2 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
         self.conv_3_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
         self.max_pool_3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_3 = nn.Conv2d(256, 4*4,kernel_size=3,padding=1)
-        multibox_conf_3 = nn.Conv2d(256, 4*2,kernel_size=3,padding=1)
+        self.conv_3 = nn.Conv2d(256, 512, kernel_size=1, padding=0)
+        multibox_loc_3 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
+        multibox_conf_3 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
@@ -75,14 +80,14 @@ class SSD(nn.Module):
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        # self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        # self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        # self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        # self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        # multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
-        # multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
-        # loc_layers.append(multibox_loc_5)
-        # conf_layers.append(multibox_conf_5)
+        self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
+        multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
+        multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        loc_layers.append(multibox_loc_5)
+        conf_layers.append(multibox_conf_5)
 
         # self.vgg = nn.ModuleList(base)
         # Layer learns to scale the l2 normalized features from conv4_3
@@ -147,18 +152,23 @@ class SSD(nn.Module):
         x = F.relu(x, inplace=True)
         feature_map_4 = x
 
-        # x = self.conv_5_1(x)
-        # x = self.conv_5_2(x)
-        # x = self.conv_5_3(x)
-        # x = self.max_pool_5(x)
-        # x = F.relu(x, inplace=True)
-        # feature_map_5 = x
+        x = self.conv_5_1(x)
+        x = self.conv_5_2(x)
+        x = self.conv_5_3(x)
+        x = self.max_pool_5(x)
+        x = F.relu(x, inplace=True)
+        feature_map_5 = x
 
-        sources.append(feature_map_1)
-        sources.append(feature_map_2)
-        sources.append(feature_map_3)
-        sources.append(feature_map_4)
-        # sources.append(feature_map_5)
+        fpn_map_1 = self.conv_1(feature_map_1) + self.upsample(feature_map_2)
+        fpn_map_2 = self.conv_2(feature_map_2) + self.upsample(feature_map_3)
+        fpn_map_3 = self.conv_3(feature_map_3) + self.upsample(feature_map_4)
+        fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
+
+        sources.append(fpn_map_1)
+        sources.append(fpn_map_2)
+        sources.append(fpn_map_3)
+        sources.append(fpn_map_4)
+        sources.append(feature_map_5)
 
         # apply multibox head to source layers
         for (x, l, c) in zip(sources, self.loc, self.conf):
@@ -200,7 +210,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [2, 2, 2, 2],
+    '512': [2, 2, 2, 2, 2],
 }
 
 # ネットワークのリスト作成
