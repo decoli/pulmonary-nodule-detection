@@ -1000,8 +1000,8 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                     # write .xml
                     tree = to_xml(
                         name=output_file_name,
-                        x=(x_min + x_max) / 2,
-                        y=(y_min + y_max) / 2,
+                        x=int((x_min + x_max) / 2 + 0.5),
+                        y=int((y_min + y_max) / 2 + 0.5),
                         w=32,
                         h=32)
                     write_xml(
