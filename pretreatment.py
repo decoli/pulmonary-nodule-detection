@@ -1,4 +1,5 @@
 import argparse
+import copy
 import csv
 import glob
 import os
@@ -24,7 +25,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
 parser.add_argument('--nodule_size', default=32, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
-parser.add_argument('--bigger_size', default=1, type=float, help=' set the GT size bigger')
+parser.add_argument('--bigger_size', default=1, type=float, help='set the GT size bigger')
+parser.add_argument('--times-movement', default=1, type=int, help='set the times nodule movement for a CT image')
 
 parser.add_argument(
     '--mode',choices=[
@@ -855,35 +857,50 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
             x_max = int(bndbox.find('xmax').text)
             y_max = int(bndbox.find('ymax').text)
 
-            # get the image
-            image = cv2.imread(file_path)
+            for time in range(args.times_movement):
+                # get the image
+                image = cv2.imread(file_path)
+                cv2.imwrite('test\\test_original.png', image)
 
-            # get crop image
-            cropped = image[y_min: y_max, x_min: x_max]
-            cv2.imwrite('test\\test_cropped.png', cropped)
+                # get crop image
+                cropped = copy.deepcopy(image[y_min: y_max, x_min: x_max])
+                cv2.imwrite('test\\test_cropped.png', cropped)
 
-            # draw nodule
-            if args.draw_nodule:
-                point_left_up =  (x_min, y_min)
-                point_right_down = (x_max, y_max)
-                cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
-                cv2.imwrite('test\\test.png', image)
+                # get the position to move to the nodule
+                back_color = int(image[0, 0, 0])
+                d = cropped.shape[0]
 
-            # get the position to move to the nodule
-            back_color = image[0, 0, 0]
-            d = cropped.shape[0]
+                # hide the original nodule
+                image[y_min: y_max, x_min: x_max] = back_color
 
-            while True:
-                x_random = random.randint(0, 512 - d)
-                y_random = random.randint(0, 512 - d)
-                area_nodule_move = image[y_random: y_random + d, x_random: x_random + d]
+                # draw nodule
+                if args.draw_nodule:
+                    point_left_up =  (x_min, y_min)
+                    point_right_down = (x_max, y_max)
+                    cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
+                    cv2.imwrite('test\\test.png', image)
 
-                if True:
-                    break
 
-            # paste the nodule
-            image[y_random: y_random + d, x_random: x_random + d] = cropped
-            cv2.imwrite('test\\test_paste.png', image)
+                while True:
+                    count_loop = 0
+                    break_while = True
+                    x_random = random.randint(0, 512 - d)
+                    y_random = random.randint(0, 512 - d)
+                    area_nodule_move = image[y_random: y_random + d, x_random: x_random + d]
+
+                    for y in range(d):
+                        for x in range(d):
+                            if int(area_nodule_move[y, x, 0]) == back_color:
+                                break_while = False
+
+                    count_loop += 1
+                    if break_while or count_loop == 10:
+                        break
+
+                # paste the nodule
+                if not count_loop == 10:
+                    image[y_random: y_random + d, x_random: x_random + d] = cropped
+                    cv2.imwrite('test\\test_paste_{time}.png'.format(time=time), image)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
