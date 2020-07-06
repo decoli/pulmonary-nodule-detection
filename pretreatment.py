@@ -2,10 +2,11 @@ import argparse
 import csv
 import glob
 import os
+import random
 import sys
+import xml.etree.ElementTree as ET
 from glob import glob
 from xml.etree.ElementTree import Element, ElementTree
-import xml.etree.ElementTree as ET
 
 import cv2
 import matplotlib.pyplot as plt
@@ -856,11 +857,33 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
 
             # get the image
             image = cv2.imread(file_path)
-            point_left_up =  (x_min, y_min)
-            point_right_down = (x_max, y_max)
-            cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
-            cv2.imwrite('test\\test.png', image)
 
+            # get crop image
+            cropped = image[y_min: y_max, x_min: x_max]
+            cv2.imwrite('test\\test_cropped.png', cropped)
+
+            # draw nodule
+            if args.draw_nodule:
+                point_left_up =  (x_min, y_min)
+                point_right_down = (x_max, y_max)
+                cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
+                cv2.imwrite('test\\test.png', image)
+
+            # get the position to move to the nodule
+            back_color = image[0, 0, 0]
+            d = cropped.shape[0]
+
+            while True:
+                x_random = random.randint(0, 512 - d)
+                y_random = random.randint(0, 512 - d)
+                area_nodule_move = image[y_random: y_random + d, x_random: x_random + d]
+
+                if True:
+                    break
+
+            # paste the nodule
+            image[y_random: y_random + d, x_random: x_random + d] = cropped
+            cv2.imwrite('test\\test_paste.png', image)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
