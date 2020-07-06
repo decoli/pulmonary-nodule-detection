@@ -837,7 +837,10 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
     path_xml = os.path.join(dir_anno_auto, '*.xml')
     list_xml_path =glob(path_xml)
 
+    # input
     dir_image = 'data\\LUNA16\\masked\\JPEGImages'
+
+    # output
     output_image = 'data\\LUNA16\\masked\\JPEGImages_move'
     output_annotation = 'data\\LUNA16\\masked\\Annotations_move'
 
@@ -863,11 +866,11 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
 
                 # get the image
                 image = cv2.imread(file_path)
-                cv2.imwrite('test\\test_original.png', image)
+                # cv2.imwrite('test\\test_original.png', image)
 
                 # get crop image
                 cropped = copy.deepcopy(image[y_min: y_max, x_min: x_max])
-                cv2.imwrite('test\\test_cropped.png', cropped)
+                # cv2.imwrite('test\\test_cropped.png', cropped)
 
                 back_color = int(image[0, 0, 0])
                 d = cropped.shape[0]
@@ -881,7 +884,6 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                     point_right_down = (x_max, y_max)
                     cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
                     cv2.imwrite('test\\test.png', image)
-
 
                 count_loop = 0
                 while True:
@@ -898,11 +900,11 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                                 break_while = False
 
                     count_loop += 1
-                    if break_while or count_loop == 1000:
+                    if break_while or count_loop == 10000:
                         break
 
                 # paste the nodule
-                if not count_loop == 1000:
+                if not count_loop == 10000:
                     image[y_random: y_random + d, x_random: x_random + d] = cropped
                     output_file_name = '{:06d}_{i}_{time}.png'.format(
                         int(root.find('filename').text.split('.')[0]) + 200000,
