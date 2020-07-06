@@ -838,6 +838,8 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
     list_xml_path =glob(path_xml)
 
     dir_image = 'data\\LUNA16\\masked\\JPEGImages'
+    output_image = 'data\\LUNA16\\masked\\JPEGImages_move'
+    output_annotation = 'data\\LUNA16\\masked\\Annotations_move'
 
     for each_xml_path in list_xml_path:
         tree = ET.parse(each_xml_path)
@@ -848,7 +850,7 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
         file_path = os.path.join(dir_image, file_name)
 
         list_object = root.findall('object')
-        for each_object in list_object:
+        for i, each_object in enumerate(list_object):
 
             # get tht loc info
             bndbox = each_object.find('bndbox')
@@ -858,6 +860,7 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
             y_max = int(bndbox.find('ymax').text)
 
             for time in range(args.times_movement):
+
                 # get the image
                 image = cv2.imread(file_path)
                 cv2.imwrite('test\\test_original.png', image)
@@ -866,7 +869,6 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                 cropped = copy.deepcopy(image[y_min: y_max, x_min: x_max])
                 cv2.imwrite('test\\test_cropped.png', cropped)
 
-                # get the position to move to the nodule
                 back_color = int(image[0, 0, 0])
                 d = cropped.shape[0]
 
@@ -881,9 +883,11 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                     cv2.imwrite('test\\test.png', image)
 
 
+                count_loop = 0
                 while True:
-                    count_loop = 0
                     break_while = True
+
+                    # get the position of moving the nodule to
                     x_random = random.randint(0, 512 - d)
                     y_random = random.randint(0, 512 - d)
                     area_nodule_move = image[y_random: y_random + d, x_random: x_random + d]
@@ -894,13 +898,18 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                                 break_while = False
 
                     count_loop += 1
-                    if break_while or count_loop == 10:
+                    if break_while or count_loop == 1000:
                         break
 
                 # paste the nodule
-                if not count_loop == 10:
+                if not count_loop == 1000:
                     image[y_random: y_random + d, x_random: x_random + d] = cropped
-                    cv2.imwrite('test\\test_paste_{time}.png'.format(time=time), image)
+                    output_file_name = '{:06d}_{i}_{time}.png'.format(
+                        int(root.find('filename').text.split('.')[0]) + 200000,
+                        i=i,
+                        time=time,)
+                    path_image_move = os.path.join(output_image, output_file_name)
+                    cv2.imwrite(path_image_move, image)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
