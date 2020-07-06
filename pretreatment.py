@@ -26,7 +26,7 @@ parser.add_argument('--debug', action='store_true', help='use data for debug')
 parser.add_argument('--draw_nodule', action='store_true', help='draw the location of nodule')
 parser.add_argument('--nodule_size', default=32, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
 parser.add_argument('--bigger_size', default=1, type=float, help='set the GT size bigger')
-parser.add_argument('--times-movement', default=1, type=int, help='set the times nodule movement for a CT image')
+parser.add_argument('--times_movement', default=1, type=int, help='set the times nodule movement for a CT image')
 
 parser.add_argument(
     '--mode',choices=[
