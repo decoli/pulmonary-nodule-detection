@@ -834,9 +834,15 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
     path_xml = os.path.join(dir_anno_auto, '*.xml')
     list_xml_path =glob(path_xml)
 
+    dir_image = 'data\\LUNA16\\masked\\JPEGImages'
+
     for each_xml_path in list_xml_path:
         tree = ET.parse(each_xml_path)
         root = tree.getroot()
+
+        # get image path
+        file_name = '{:06d}.png'.format(int(root.find('filename').text.split('.')[0]))
+        file_path = os.path.join(dir_image, file_name)
 
         list_object = root.findall('object')
         for each_object in list_object:
@@ -849,6 +855,11 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
             y_max = int(bndbox.find('ymax').text)
 
             # get the image
+            image = cv2.imread(file_path)
+            point_left_up =  (x_min, y_min)
+            point_right_down = (x_max, y_max)
+            cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
+            cv2.imwrite('test\\test.png', image)
 
 
 if __name__ == '__main__':
