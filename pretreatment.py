@@ -5,6 +5,7 @@ import os
 import sys
 from glob import glob
 from xml.etree.ElementTree import Element, ElementTree
+import xml.etree.ElementTree as ET
 
 import cv2
 import matplotlib.pyplot as plt
@@ -39,6 +40,8 @@ parser.add_argument(
         # get text.txt/trainval.txt in ImageSets/Main
         'get_main_txt',
         'negative_get_main_txt',
+
+        'augmentation_movement'
         ],help='set the run mode'
     )
 
@@ -826,8 +829,27 @@ def negative_get_main_txt():
         'copy and paste the context to:'
         'data/LUNA16/masked/ImageSets/Main/trainval.txt'.format(test_path))
 
-def augmentation_move(): # 移动原结节在CT图像中的位置
-    pass
+def augmentation_movement(): # 移动原结节在CT图像中的位置
+    dir_anno_auto = 'data\\LUNA16\\masked\\Annotations_auto'
+    path_xml = os.path.join(dir_anno_auto, '*.xml')
+    list_xml_path =glob(path_xml)
+
+    for each_xml_path in list_xml_path:
+        tree = ET.parse(each_xml_path)
+        root = tree.getroot()
+
+        list_object = root.findall('object')
+        for each_object in list_object:
+
+            # get tht loc info
+            bndbox = each_object.find('bndbox')
+            x_min = int(bndbox.find('xmin').text)
+            y_min = int(bndbox.find('ymin').text)
+            x_max = int(bndbox.find('xmax').text)
+            y_max = int(bndbox.find('ymax').text)
+
+            # get the image
+
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
@@ -847,3 +869,5 @@ if __name__ == '__main__':
         negative_get_voc_anno()
     elif args.mode == 'negative_get_main_txt':
         negative_get_main_txt()
+    elif args.mode == 'augmentation_movement':
+        augmentation_movement()
