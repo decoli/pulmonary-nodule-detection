@@ -189,6 +189,9 @@ def train():
             batch_iterator=iter(data_loader)
             images, targets = next(batch_iterator)
 
+        if images.shape[0] == 1:
+            continue
+
         if args.cuda:
             # images = Variable(images.cuda())
             # targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
