@@ -1,11 +1,61 @@
+import os
+from functools import reduce
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from layers import *
+
 # from data import voc, coco
 from data import voc
-import os
+from layers import *
+
+class SKConv(nn.Module):
+    def __init__(self,in_channels,out_channels,stride=1,M=2,r=16,L=32):
+        '''
+        :param in_channels:  输入通道维度
+        :param out_channels: 输出通道维度   原论文中 输入输出通道维度相同
+        :param stride:  步长，默认为1
+        :param M:  分支数
+        :param r: 特征Z的长度，计算其维度d 时所需的比率（论文中 特征S->Z 是降维，故需要规定 降维的下界）
+        :param L:  论文中规定特征Z的下界，默认为32
+        '''
+        super(SKConv,self).__init__()
+        d=max(in_channels//r,L)   # 计算向量Z 的长度d
+        self.M=M
+        self.out_channels=out_channels
+        self.conv=nn.ModuleList()  # 根据分支数量 添加 不同核的卷积操作
+        for i in range(M):
+            # 为提高效率，原论文中 扩张卷积5x5为 （3X3，dilation=2）来代替。 且论文中建议组卷积G=32
+            self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=32,bias=False),
+                                           nn.BatchNorm2d(out_channels),
+                                           nn.ReLU(inplace=True)))
+        self.global_pool=nn.AdaptiveAvgPool2d(1) # 自适应pool到指定维度    这里指定为1，实现 GAP
+        self.fc1=nn.Sequential(nn.Conv2d(out_channels,d,1,bias=False),
+                               nn.BatchNorm2d(d),
+                               nn.ReLU(inplace=True))   # 降维
+        self.fc2=nn.Conv2d(d,out_channels*M,1,1,bias=False)  # 升维
+        self.softmax=nn.Softmax(dim=1) # 指定dim=1  使得两个全连接层对应位置进行softmax,保证 对应位置a+b+..=1
+    def forward(self, input):
+        batch_size=input.size(0)
+        output=[]
+        #the part of split
+        for i,conv in enumerate(self.conv):
+            #print(i,conv(input).size())
+            output.append(conv(input))
+        #the part of fusion
+        U=reduce(lambda x,y:x+y,output) # 逐元素相加生成 混合特征U
+        s=self.global_pool(U)
+        z=self.fc1(s)  # S->Z降维
+        a_b=self.fc2(z) # Z->a，b 升维  论文使用conv 1x1表示全连接。结果中前一半通道值为a,后一半为b
+        a_b=a_b.reshape(batch_size,self.M,self.out_channels,-1) #调整形状，变为 两个全连接层的值
+        a_b=self.softmax(a_b) # 使得两个全连接层对应位置进行softmax
+        #the part of selection
+        a_b=list(a_b.chunk(self.M,dim=1))#split to a and b   chunk为pytorch方法，将tensor按照指定维度切分成 几个tensor块
+        a_b=list(map(lambda x:x.reshape(batch_size,self.out_channels,1,1),a_b)) # 将所有分块  调整形状，即扩展两维
+        V=list(map(lambda x,y:x*y,output,a_b)) # 权重与对应  不同卷积核输出的U 逐元素相乘
+        V=reduce(lambda x,y:x+y,V) # 两个加权后的特征 逐元素相加
+        return V
 
 class SSD(nn.Module):
     """Single Shot Multibox Architecture
@@ -42,58 +92,41 @@ class SSD(nn.Module):
 
         # SSD network
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
+        self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.bn = nn.BatchNorm2d
 
-        self.conv_1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.conv_1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.max_pool_1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_1 = nn.Conv2d(64, 128, kernel_size=1, padding=0)
-        multibox_loc_1 = nn.Conv2d(128, 4*4,kernel_size=3,padding=1)
-        multibox_conf_1 = nn.Conv2d(128, 4*2,kernel_size=3,padding=1)
+        self.conv_0 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=1, stride=1, padding=0)
+
+        self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=3)
+        multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_1 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
-        self.conv_2_1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.conv_2_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
-        self.max_pool_2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_2 = nn.Conv2d(128, 256, kernel_size=1, padding=0)
-        multibox_loc_2 = nn.Conv2d(256, 4*4,kernel_size=3,padding=1)
-        multibox_conf_2 = nn.Conv2d(256, 4*2,kernel_size=3,padding=1)
+        self.sk_conv_2 = SKConv(in_channels=64, out_channels=64, M=3)
+        multibox_loc_2 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_2 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
-        self.conv_3_1 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-        self.conv_3_2 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.conv_3_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.max_pool_3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv_3 = nn.Conv2d(256, 512, kernel_size=1, padding=0)
-        multibox_loc_3 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
-        multibox_conf_3 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        self.sk_conv_3 = SKConv(in_channels=64, out_channels=64, M=3)
+        multibox_loc_3 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_3 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
-        self.conv_4_1 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-        self.conv_4_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.conv_4_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.max_pool_4 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_4 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
-        multibox_conf_4 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        self.sk_conv_4 = SKConv(in_channels=64, out_channels=64, M=3)
+        multibox_loc_4 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_4 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        self.conv_5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.conv_5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.conv_5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.max_pool_5 = nn.MaxPool2d(kernel_size=2, stride=2)
-        multibox_loc_5 = nn.Conv2d(512, 4*4,kernel_size=3,padding=1)
-        multibox_conf_5 = nn.Conv2d(512, 4*2,kernel_size=3,padding=1)
+        self.sk_conv_5 = SKConv(in_channels=64, out_channels=64, M=3)
+        multibox_loc_5 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_5 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_5)
         conf_layers.append(multibox_conf_5)
 
-        # self.vgg = nn.ModuleList(base)
-        # Layer learns to scale the l2 normalized features from conv4_3
-        # self.L2Norm = L2Norm(512, 20)
-        # self.extras = nn.ModuleList(extras)
-        # オフセットと確信度のネットワークリスト
         self.loc = nn.ModuleList(loc_layers)
         self.conf = nn.ModuleList(conf_layers)
 
@@ -126,49 +159,37 @@ class SSD(nn.Module):
         loc = list()
         conf = list()
 
-        x = self.conv_1_1(x)
-        x = self.conv_1_2(x)
-        x = self.max_pool_1(x)
-        x = F.relu(x, inplace=True)
+        x = self.conv_0(x)
+
+        x = self.sk_conv_1(x)
+        x = self.max_pool(x)
         feature_map_1 = x
 
-        x = self.conv_2_1(x)
-        x = self.conv_2_2(x)
-        x = self.max_pool_2(x)
-        x = F.relu(x, inplace=True)
+        x = self.sk_conv_2(x)
+        x = self.max_pool(x)
         feature_map_2 = x
 
-        x = self.conv_3_1(x)
-        x = self.conv_3_2(x)
-        x = self.conv_3_3(x)
-        x = self.max_pool_3(x)
-        x = F.relu(x, inplace=True)
+        x = self.sk_conv_3(x)
+        x = self.max_pool(x)
         feature_map_3 = x
 
-        x = self.conv_4_1(x)
-        x = self.conv_4_2(x)
-        x = self.conv_4_3(x)
-        x = self.max_pool_4(x)
-        x = F.relu(x, inplace=True)
+        x = self.sk_conv_4(x)
+        x = self.max_pool(x)
         feature_map_4 = x
 
-        x = self.conv_5_1(x)
-        x = self.conv_5_2(x)
-        x = self.conv_5_3(x)
-        x = self.max_pool_5(x)
-        x = F.relu(x, inplace=True)
+        x = self.sk_conv_5(x)
+        x = self.max_pool(x)
         feature_map_5 = x
 
-        fpn_map_1 = self.conv_1(feature_map_1) + self.upsample(feature_map_2)
-        fpn_map_2 = self.conv_2(feature_map_2) + self.upsample(feature_map_3)
-        fpn_map_3 = self.conv_3(feature_map_3) + self.upsample(feature_map_4)
+        fpn_map_1 = feature_map_1 + self.upsample(feature_map_2)
+        fpn_map_2 = feature_map_2 + self.upsample(feature_map_3)
+        fpn_map_3 = feature_map_3 + self.upsample(feature_map_4)
         fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
 
         sources.append(fpn_map_1)
         sources.append(fpn_map_2)
         sources.append(fpn_map_3)
         sources.append(fpn_map_4)
-        sources.append(feature_map_5)
 
         # apply multibox head to source layers
         for (x, l, c) in zip(sources, self.loc, self.conf):
@@ -210,7 +231,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [2, 2, 2, 2, 2],
+    '512': [2, 2, 2, 2],
 }
 
 # ネットワークのリスト作成
