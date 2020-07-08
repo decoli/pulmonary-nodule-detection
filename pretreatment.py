@@ -7,6 +7,7 @@ import random
 import sys
 import xml.etree.ElementTree as ET
 from glob import glob
+from random import shuffle
 from xml.etree.ElementTree import Element, ElementTree
 
 import cv2
@@ -795,7 +796,9 @@ def get_main_txt():
     luna16_masked_path = 'data\LUNA16\masked'
     xml_path = os.path.join(os.path.join(luna16_masked_path, 'Annotations', '*.xml'))
     list_xml_path = glob(xml_path)
-    print(list_xml_path)
+
+    # shuffle the list
+    shuffle(list_xml_path)
 
     list_trainval = []
     list_test = []
