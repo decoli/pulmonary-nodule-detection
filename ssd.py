@@ -96,32 +96,32 @@ class SSD(nn.Module):
         self.bn = nn.BatchNorm2d
 
         self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
-        multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
-        multibox_conf_1 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
+        multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
+        multibox_conf_1 = nn.Conv2d(192, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
-        self.sk_conv_2 = SKConv(in_channels=64, out_channels=64, M=2)
-        multibox_loc_2 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
-        multibox_conf_2 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
+        self.sk_conv_2 = SKConv(in_channels=64, out_channels=128, M=2)
+        multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
+        multibox_conf_2 = nn.Conv2d(384, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
-        self.sk_conv_3 = SKConv(in_channels=64, out_channels=64, M=2)
-        multibox_loc_3 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
-        multibox_conf_3 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
+        self.sk_conv_3 = SKConv(in_channels=128, out_channels=256, M=2)
+        multibox_loc_3 = nn.Conv2d(768, 4*4, kernel_size=3, padding=1)
+        multibox_conf_3 = nn.Conv2d(768, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
-        self.sk_conv_4 = SKConv(in_channels=64, out_channels=64, M=2)
-        multibox_loc_4 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
-        multibox_conf_4 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
+        self.sk_conv_4 = SKConv(in_channels=256, out_channels=512, M=2)
+        multibox_loc_4 = nn.Conv2d(1024, 4*4, kernel_size=3, padding=1)
+        multibox_conf_4 = nn.Conv2d(1024, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        self.sk_conv_5 = SKConv(in_channels=64, out_channels=64, M=2)
-        multibox_loc_5 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
-        multibox_conf_5 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
+        self.sk_conv_5 = SKConv(in_channels=512, out_channels=512, M=2)
+        multibox_loc_5 = nn.Conv2d(512, 4*4, kernel_size=3, padding=1)
+        multibox_conf_5 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_5)
         conf_layers.append(multibox_conf_5)
 
@@ -177,10 +177,15 @@ class SSD(nn.Module):
         x = self.max_pool(x)
         feature_map_5 = x
 
-        fpn_map_1 = feature_map_1 + self.upsample(feature_map_2)
-        fpn_map_2 = feature_map_2 + self.upsample(feature_map_3)
-        fpn_map_3 = feature_map_3 + self.upsample(feature_map_4)
-        fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
+        fpn_map_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
+        fpn_map_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
+        fpn_map_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
+        fpn_map_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
+
+        # fpn_map_1 = feature_map_1 + self.upsample(feature_map_2)
+        # fpn_map_2 = feature_map_2 + self.upsample(feature_map_3)
+        # fpn_map_3 = feature_map_3 + self.upsample(feature_map_4)
+        # fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
 
         sources.append(fpn_map_1)
         sources.append(fpn_map_2)
