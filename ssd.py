@@ -27,7 +27,7 @@ class SKConv(nn.Module):
         self.conv=nn.ModuleList()  # 根据分支数量 添加 不同核的卷积操作
         for i in range(M):
             # 为提高效率，原论文中 扩张卷积5x5为 （3X3，dilation=2）来代替。 且论文中建议组卷积G=32
-            self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=32,bias=False),
+            self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=1,bias=False),
                                            nn.BatchNorm2d(out_channels),
                                            nn.ReLU(inplace=True)))
         self.global_pool=nn.AdaptiveAvgPool2d(1) # 自适应pool到指定维度    这里指定为1，实现 GAP
@@ -95,33 +95,31 @@ class SSD(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bn = nn.BatchNorm2d
 
-        self.conv_0 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=1, stride=1, padding=0)
-
-        self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=3)
+        self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_1 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
-        self.sk_conv_2 = SKConv(in_channels=64, out_channels=64, M=3)
+        self.sk_conv_2 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_2 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_2 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
-        self.sk_conv_3 = SKConv(in_channels=64, out_channels=64, M=3)
+        self.sk_conv_3 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_3 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_3 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
-        self.sk_conv_4 = SKConv(in_channels=64, out_channels=64, M=3)
+        self.sk_conv_4 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_4 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_4 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        self.sk_conv_5 = SKConv(in_channels=64, out_channels=64, M=3)
+        self.sk_conv_5 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_5 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_5 = nn.Conv2d(64, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_5)
@@ -158,8 +156,6 @@ class SSD(nn.Module):
         sources = list()
         loc = list()
         conf = list()
-
-        x = self.conv_0(x)
 
         x = self.sk_conv_1(x)
         x = self.max_pool(x)
