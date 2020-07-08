@@ -815,12 +815,14 @@ def get_main_txt():
     for i in list_trainval:
         f.write('{:06d}\n'.format(i))
     f.close()
+    print('output: {}'.format(trainval_path))
 
     test_path = os.path.join(luna16_masked_path, 'ImageSets', 'Main', 'test.txt')
     f=open(test_path,'w')
     for i in list_test:
         f.write('{:06d}\n'.format(i))
     f.close()
+    print('output: {}'.format(test_path))
 
 def negative_get_main_txt():
 
