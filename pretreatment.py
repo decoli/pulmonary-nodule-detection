@@ -922,15 +922,30 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
         tree.write(out_path, encoding="utf-8",xml_declaration=True)
 
     dir_anno_auto = 'data\\LUNA16\\masked\\Annotations_auto'
-    path_xml = os.path.join(dir_anno_auto, '*.xml')
-    list_xml_path =glob(path_xml)
+    # path_xml = os.path.join(dir_anno_auto, '*.xml')
+    # list_xml_path =glob(path_xml)
 
+    # make list_xml_path by trainval.txt
+    path_trainval_txt = 'data\\LUNA16\\masked\\ImageSets\\Main\\trainval.txt'
+    list_xml_path = []
+
+    with open(path_trainval_txt, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            list_xml_path.append(os.path.join(dir_anno_auto, '{row}.xml'.format(row=row[0])))
+
+    count_all = len(list_xml_path) * args.times_movement
+    count = 0
     # input
     dir_image = 'data\\LUNA16\\masked\\JPEGImages'
 
     # output
     output_image = 'data\\LUNA16\\masked\\JPEGImages_move'
     output_annotation = 'data\\LUNA16\\masked\\Annotations_move'
+
+    path_trainval_move = 'data\\LUNA16\\masked\\ImageSets\\Main\\trainval_move.txt'
+    f = open(path_trainval_move, 'w', newline='')
+    csv_writer = csv.writer(f)
 
     count_xml = 0
     for each_xml_path in list_xml_path:
@@ -1012,7 +1027,19 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                     write_xml(
                         tree, "data/LUNA16/masked/Annotations_move/{:06d}.xml".
                         format(200000 + count_xml))
+                    
+                    # write csv
+                    csv_writer.writerow([str(200000 + count_xml)], )
+
                     count_xml += 1
+
+            count += 1
+            print('\rplease wait... {:.2%}'.format(count / count_all), end='', flush=True)
+
+    f.close()
+    print('output: {}'.format(path_trainval_move))
+    print('output: {}'.format(output_image))
+    print('output: {}'.format(output_annotation))
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
