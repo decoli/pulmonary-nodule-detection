@@ -93,37 +93,36 @@ class SSD(nn.Module):
         # SSD network
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.bn = nn.BatchNorm2d
 
         self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
-        multibox_conf_1 = nn.Conv2d(192, 4*2, kernel_size=3, padding=1)
-        # loc_layers.append(multibox_loc_1)
-        # conf_layers.append(multibox_conf_1)
+        multibox_conf_1 = nn.Conv2d(128, 4*2, kernel_size=3, padding=1)
+        loc_layers.append(multibox_loc_1)
+        conf_layers.append(multibox_conf_1)
 
         self.sk_conv_2 = SKConv(in_channels=64, out_channels=128, M=2)
         multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
-        multibox_conf_2 = nn.Conv2d(384, 4*2, kernel_size=3, padding=1)
+        multibox_conf_2 = nn.Conv2d(256, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
         self.sk_conv_3 = SKConv(in_channels=128, out_channels=256, M=2)
         multibox_loc_3 = nn.Conv2d(768, 4*4, kernel_size=3, padding=1)
-        multibox_conf_3 = nn.Conv2d(768, 4*2, kernel_size=3, padding=1)
+        multibox_conf_3 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
         self.sk_conv_4 = SKConv(in_channels=256, out_channels=512, M=2)
         multibox_loc_4 = nn.Conv2d(1024, 4*4, kernel_size=3, padding=1)
-        multibox_conf_4 = nn.Conv2d(1024, 4*2, kernel_size=3, padding=1)
+        multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
         self.sk_conv_5 = SKConv(in_channels=512, out_channels=512, M=2)
-        multibox_loc_5 = nn.Conv2d(512, 4*4, kernel_size=3, padding=1)
-        multibox_conf_5 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
-        loc_layers.append(multibox_loc_5)
-        conf_layers.append(multibox_conf_5)
+        # multibox_loc_5 = nn.Conv2d(512, 4*4, kernel_size=3, padding=1)
+        # multibox_conf_5 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
+        # loc_layers.append(multibox_loc_5)
+        # conf_layers.append(multibox_conf_5)
 
         self.loc = nn.ModuleList(loc_layers)
         self.conf = nn.ModuleList(conf_layers)
@@ -177,25 +176,33 @@ class SSD(nn.Module):
         x = self.max_pool(x)
         feature_map_5 = x
 
-        fpn_map_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
-        fpn_map_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
-        fpn_map_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
-        fpn_map_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
+        fpn_map_loc_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
+        fpn_map_loc_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
+        fpn_map_loc_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
+        fpn_map_loc_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
 
-        # fpn_map_1 = feature_map_1 + self.upsample(feature_map_2)
-        # fpn_map_2 = feature_map_2 + self.upsample(feature_map_3)
-        # fpn_map_3 = feature_map_3 + self.upsample(feature_map_4)
-        # fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
+        fpn_map_conf_1 = feature_map_2
+        fpn_map_conf_2 = feature_map_3
+        fpn_map_conf_3 = feature_map_4
+        fpn_map_conf_4 = feature_map_5
 
-        # sources.append(fpn_map_1)
-        sources.append(fpn_map_2)
-        sources.append(fpn_map_3)
-        sources.append(fpn_map_4)
+        sources_loc.append(fpn_map_loc_1)
+        sources_loc.append(fpn_map_loc_2)
+        sources_loc.append(fpn_map_loc_3)
+        sources_loc.append(fpn_map_loc_4)
+
+        sources_conf.append(fpn_map_conf_1)
+        sources_conf.append(fpn_map_conf_2)
+        sources_conf.append(fpn_map_conf_3)
+        sources_conf.append(fpn_map_conf_4)
 
         # apply multibox head to source layers
-        for (x, l, c) in zip(sources, self.loc, self.conf):
+        for (x, l) in zip(sources_loc, self.loc):
             # (バッチサイズ,C,W,H) → (バッチサイズ,W,H,C)にTranspose
             loc.append(l(x).permute(0, 2, 3, 1).contiguous())
+
+        for (x, c) in zip(sources_conf, self.conf):
+            # (バッチサイズ,C,W,H) → (バッチサイズ,W,H,C)にTranspose
             conf.append(c(x).permute(0, 2, 3, 1).contiguous())
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
