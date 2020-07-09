@@ -96,25 +96,25 @@ class SSD(nn.Module):
 
         self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
-        multibox_conf_1 = nn.Conv2d(128, 4*2, kernel_size=3, padding=1)
+        multibox_conf_1 = nn.Conv2d(128+256, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
         self.sk_conv_2 = SKConv(in_channels=64, out_channels=128, M=2)
         multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
-        multibox_conf_2 = nn.Conv2d(256, 4*2, kernel_size=3, padding=1)
+        multibox_conf_2 = nn.Conv2d(256+512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
         self.sk_conv_3 = SKConv(in_channels=128, out_channels=256, M=2)
         multibox_loc_3 = nn.Conv2d(768, 4*4, kernel_size=3, padding=1)
-        multibox_conf_3 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
+        multibox_conf_3 = nn.Conv2d(512+512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
         self.sk_conv_4 = SKConv(in_channels=256, out_channels=512, M=2)
         multibox_loc_4 = nn.Conv2d(1024, 4*4, kernel_size=3, padding=1)
-        multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
+        multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
@@ -181,16 +181,18 @@ class SSD(nn.Module):
         fpn_map_loc_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
         fpn_map_loc_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
 
-        fpn_map_conf_1 = feature_map_2
-        fpn_map_conf_2 = feature_map_3
-        fpn_map_conf_3 = feature_map_4
-        fpn_map_conf_4 = feature_map_5
+        fpn_map_conf_1 = self.upsample(torch.cat((feature_map_2, self.upsample(feature_map_3)), 1))
+        fpn_map_conf_2 = self.upsample(torch.cat((feature_map_3, self.upsample(feature_map_4)), 1))
+        fpn_map_conf_3 = self.upsample(torch.cat((feature_map_4, self.upsample(feature_map_5)), 1))
+        fpn_map_conf_4 = self.upsample(feature_map_5)
 
+        sources_loc = []
         sources_loc.append(fpn_map_loc_1)
         sources_loc.append(fpn_map_loc_2)
         sources_loc.append(fpn_map_loc_3)
         sources_loc.append(fpn_map_loc_4)
 
+        sources_conf = []
         sources_conf.append(fpn_map_conf_1)
         sources_conf.append(fpn_map_conf_2)
         sources_conf.append(fpn_map_conf_3)
@@ -239,7 +241,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [6, 6, 4],
+    '512': [6, 6, 4, 4],
 }
 
 # ネットワークのリスト作成
