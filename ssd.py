@@ -93,6 +93,7 @@ class SSD(nn.Module):
         # SSD network
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.dropout = nn.Dropout2d()
 
         self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
@@ -181,10 +182,10 @@ class SSD(nn.Module):
         fpn_map_loc_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
         fpn_map_loc_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
 
-        fpn_map_conf_1 = self.upsample(torch.cat((feature_map_2, self.upsample(feature_map_3)), 1))
-        fpn_map_conf_2 = self.upsample(torch.cat((feature_map_3, self.upsample(feature_map_4)), 1))
-        fpn_map_conf_3 = self.upsample(torch.cat((feature_map_4, self.upsample(feature_map_5)), 1))
-        fpn_map_conf_4 = self.upsample(feature_map_5)
+        fpn_map_conf_1 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
+        fpn_map_conf_2 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
+        fpn_map_conf_3 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
+        fpn_map_conf_4 = feature_map_5
 
         sources_loc = []
         sources_loc.append(fpn_map_loc_1)
@@ -201,11 +202,15 @@ class SSD(nn.Module):
         # apply multibox head to source layers
         for (x, l) in zip(sources_loc, self.loc):
             # (バッチサイズ,C,W,H) → (バッチサイズ,W,H,C)にTranspose
-            loc.append(l(x).permute(0, 2, 3, 1).contiguous())
+            x = l(x)
+            loc.append(x.permute(0, 2, 3, 1).contiguous())
 
         for (x, c) in zip(sources_conf, self.conf):
             # (バッチサイズ,C,W,H) → (バッチサイズ,W,H,C)にTranspose
-            conf.append(c(x).permute(0, 2, 3, 1).contiguous())
+            # x = self.dropout(x)
+            x = c(x)
+            x = self.upsample(x)
+            conf.append(x.permute(0, 2, 3, 1).contiguous())
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
