@@ -98,8 +98,8 @@ class SSD(nn.Module):
         self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
         multibox_conf_1 = nn.Conv2d(192, 4*2, kernel_size=3, padding=1)
-        loc_layers.append(multibox_loc_1)
-        conf_layers.append(multibox_conf_1)
+        # loc_layers.append(multibox_loc_1)
+        # conf_layers.append(multibox_conf_1)
 
         self.sk_conv_2 = SKConv(in_channels=64, out_channels=128, M=2)
         multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
@@ -187,7 +187,7 @@ class SSD(nn.Module):
         # fpn_map_3 = feature_map_3 + self.upsample(feature_map_4)
         # fpn_map_4 = feature_map_4 + self.upsample(feature_map_5)
 
-        sources.append(fpn_map_1)
+        # sources.append(fpn_map_1)
         sources.append(fpn_map_2)
         sources.append(fpn_map_3)
         sources.append(fpn_map_4)
@@ -232,7 +232,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [2, 2, 2, 2],
+    '512': [6, 6, 4],
 }
 
 # ネットワークのリスト作成
