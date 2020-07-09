@@ -873,7 +873,7 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
         erow4 = Element('object')
         
         erow41 = Element('name')
-        erow41.text = 'nonnodule'
+        erow41.text = 'nodule'
 
         erow4_pos = Element('pose')
         erow4_pos.text = 'Unspecified'
@@ -1013,10 +1013,7 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                 # paste the nodule
                 if not count_loop == 1000:
                     image[y_random: y_random + d, x_random: x_random + d] = cropped
-                    output_file_name = '{:06d}_{j}_{time}.png'.format(
-                        int(root.find('filename').text.split('.')[0]) + 200000,
-                        j=j,
-                        time=time,)
+                    output_file_name = '{}.png'.format(str(200000 + count_xml))
                     path_image_move = os.path.join(output_image, output_file_name)
                     cv2.imwrite(path_image_move, image)
 
@@ -1032,7 +1029,7 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                         format(200000 + count_xml))
 
                     # write csv
-                    csv_writer.writerow([str(200000 + count_xml)], )
+                    csv_writer.writerow([str(200000 + count_xml)])
                 count_xml += 1
 
         print('\rplease wait... {:.2%}'.format((i + 1) / count_all), end='', flush=True)
