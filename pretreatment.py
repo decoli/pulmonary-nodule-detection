@@ -1045,6 +1045,7 @@ def visualize_xml_on_image():
     dir_xml = 'data\\LUNA16\\masked\\Annotations'
     path_xml = os.path.join(dir_xml, '*.xml')
     list_path_xml = glob(path_xml)
+    shuffle(list_path_xml)
 
     dir_image = 'data\\LUNA16\\masked\\JPEGImages'
 
@@ -1058,18 +1059,18 @@ def visualize_xml_on_image():
         object_nodule = root.find('object')
         bndbox = object_nodule.find('bndbox')
         
-        x_min = bndbox.find('xmin').text
-        y_min = bndbox.find('ymin').text
-        x_max = bndbox.find('xmax').text
-        y_max = bndbox.find('ymax').text
+        x_min = int(bndbox.find('xmin').text)
+        y_min = int(bndbox.find('ymin').text)
+        x_max = int(bndbox.find('xmax').text)
+        y_max = int(bndbox.find('ymax').text)
 
         point_left_up = (x_min, y_min)
         point_right_down = (x_max, y_max)
 
         image = cv2.imread(path_image)
-        cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 2)
+        cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 1)
 
-        cv2.imwrite('text\\text.png', image)
+        cv2.imwrite('test\\test.png', image)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
