@@ -45,22 +45,13 @@ parser.add_argument(
         'get_main_txt',
         'negative_get_main_txt',
 
-        'augmentation_movement'
+        'augmentation_movement',
+        'visualize_xml_on_image',
         ],help='set the run mode'
     )
 
 args = parser.parse_args()
 
-# set path
-
-if os.name == 'posix':
-    working_path = '/Volumes/shirui_WD_2/lung_image/all_LUNA16/LUNA16'
-else:
-    working_path = 'E:\lung_image\\all_LUNA16\\LUNA16'
-
-cand_path = 'data/LUNA16/candidates.csv'
-anno_path = 'data/LUNA16/annotations.csv'
-negative_anno_path = 'data/LUNA16/negative/negative_anno.csv'
 
 '''convert world coordinate to real coordinate'''
 def worldToVoxelCoord(worldCoord, origin, spacing):
@@ -333,6 +324,9 @@ def negative_masked_image_rename():
         os.rename(each_image_path, image_rename_path)
 
 def get_voc_anno():
+    '''
+    根据annotations.csv生成标注文件(.xml)
+    '''
     def beatau(e,level=0):
         if len(e) > 0:
             e.text='\n'+'\t'*(level+1)
@@ -417,6 +411,12 @@ def get_voc_anno():
         out_path: 写出路径'''  
         tree.write(out_path, encoding="utf-8",xml_declaration=True)
 
+    if os.name == 'posix':
+        working_path = '/Volumes/shirui_WD_2/lung_image/all_LUNA16/LUNA16'
+    else:
+        working_path = 'E:\lung_image\\all_LUNA16\\LUNA16'
+
+    anno_path = 'data/LUNA16/annotations.csv'
     pd_annotation = pd.read_csv(anno_path)
 
     seriesuid_temp = None
@@ -535,7 +535,7 @@ def get_voc_anno():
                 list_count_image.append(each_nodule['count_image'])
 
             # make .xml
-            name_image = '{}.png'.format(min(list_count_image))
+            name_image = '{:06d}.png'.format(min(list_count_image))
             tree = to_xml(
                 name=name_image,
                 list_x=list_x,
@@ -1020,8 +1020,10 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
                     # write .xml
                     tree = to_xml(
                         name=output_file_name,
-                        x=int((x_min + x_max) / 2 + 0.5),
-                        y=int((y_min + y_max) / 2 + 0.5),
+                        # x=int((x_min + x_max) / 2 + 0.5),
+                        # y=int((y_min + y_max) / 2 + 0.5),
+                        x=int((x_random + x_random + d) / 2 + 0.5),
+                        y=int((y_random + y_random + d) / 2 + 0.5),
                         w=32,
                         h=32)
                     write_xml(
@@ -1035,6 +1037,39 @@ def augmentation_movement(): # 移动原结节在CT图像中的位置
         print('\rplease wait... {:.2%}'.format((i + 1) / count_all), end='', flush=True)
 
     f.close()
+
+def visualize_xml_on_image():
+    '''
+    用于确认xml信息与图像中结节位置对应。
+    '''
+    dir_xml = 'data\\LUNA16\\masked\\Annotations'
+    path_xml = os.path.join(dir_xml, '*.xml')
+    list_path_xml = glob(path_xml)
+
+    dir_image = 'data\\LUNA16\\masked\\JPEGImages'
+
+    for each_path_xml in list_path_xml:
+        tree = ET.parse(each_path_xml)
+        root = tree.getroot()
+
+        file_name = root.find('filename').text
+        path_image = os.path.join(dir_image, '{}'.format(file_name))
+
+        object_nodule = root.find('object')
+        bndbox = object_nodule.find('bndbox')
+        
+        x_min = bndbox.find('xmin').text
+        y_min = bndbox.find('ymin').text
+        x_max = bndbox.find('xmax').text
+        y_max = bndbox.find('ymax').text
+
+        point_left_up = (x_min, y_min)
+        point_right_down = (x_max, y_max)
+
+        image = cv2.imread(path_image)
+        cv2.rectangle(image, point_left_up, point_right_down, (0, 0, 255), 2)
+
+        cv2.imwrite('text\\text.png', image)
 
 if __name__ == '__main__':
     if args.mode == 'get_masked_image':
@@ -1056,3 +1091,5 @@ if __name__ == '__main__':
         negative_get_main_txt()
     elif args.mode == 'augmentation_movement':
         augmentation_movement()
+    elif args.mode == 'visualize_xml_on_image':
+        visualize_xml_on_image()
