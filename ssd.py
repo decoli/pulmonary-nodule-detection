@@ -28,7 +28,7 @@ class SKConv(nn.Module):
         for i in range(M):
             # 为提高效率，原论文中 扩张卷积5x5为 （3X3，dilation=2）来代替。 且论文中建议组卷积G=32
             self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=1,bias=False),
-                                           nn.BatchNorm2d(out_channels),
+                                        #    nn.BatchNorm2d(out_channels),
                                            nn.ReLU(inplace=True)))
         self.global_pool=nn.AdaptiveAvgPool2d(1) # 自适应pool到指定维度    这里指定为1，实现 GAP
         self.fc1=nn.Sequential(nn.Conv2d(out_channels,d,1,bias=False),
@@ -91,39 +91,51 @@ class SSD(nn.Module):
         conf_layers = []
 
         # SSD network
+        ## vgg part
+        self.conv_1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv_1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+
+        self.conv_2_1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv_2_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+
+        self.conv_3_1 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
+        self.conv_3_2 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.conv_3_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+
+        self.conv_4_1 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
+        self.conv_4_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_4_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+
+        ## utility
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.dropout = nn.Dropout2d()
 
-        self.sk_conv_1 = SKConv(in_channels=3, out_channels=64, M=2)
+        ## sknet
+        self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
         multibox_conf_1 = nn.Conv2d(128+256, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
-        self.sk_conv_2 = SKConv(in_channels=64, out_channels=128, M=2)
+        self.sk_conv_2 = SKConv(in_channels=128, out_channels=128, M=2)
         multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
         multibox_conf_2 = nn.Conv2d(256+512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
-        self.sk_conv_3 = SKConv(in_channels=128, out_channels=256, M=2)
+        self.sk_conv_3 = SKConv(in_channels=256, out_channels=256, M=2)
         multibox_loc_3 = nn.Conv2d(768, 4*4, kernel_size=3, padding=1)
         multibox_conf_3 = nn.Conv2d(512+512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
-        self.sk_conv_4 = SKConv(in_channels=256, out_channels=512, M=2)
+        self.sk_conv_4 = SKConv(in_channels=512, out_channels=512, M=2)
         multibox_loc_4 = nn.Conv2d(1024, 4*4, kernel_size=3, padding=1)
         multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=7, padding=3)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
 
-        self.sk_conv_5 = SKConv(in_channels=512, out_channels=512, M=2)
-        # multibox_loc_5 = nn.Conv2d(512, 4*4, kernel_size=3, padding=1)
-        # multibox_conf_5 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
-        # loc_layers.append(multibox_loc_5)
-        # conf_layers.append(multibox_conf_5)
 
         self.loc = nn.ModuleList(loc_layers)
         self.conf = nn.ModuleList(conf_layers)
@@ -246,7 +258,7 @@ class SSD(nn.Module):
 
 # 特徴マップ毎のアスペクト比の数
 mbox = {
-    '512': [4, 4, 2, 2],
+    '512': [4, 4, 4, 4],
 }
 
 # ネットワークのリスト作成
