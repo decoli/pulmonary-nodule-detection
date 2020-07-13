@@ -231,7 +231,6 @@ class SSD(nn.Module):
             # (バッチサイズ,C,W,H) → (バッチサイズ,W,H,C)にTranspose
             # x = self.dropout(x)
             x = c(x)
-            x = self.upsample(x)
             conf.append(x.permute(0, 2, 3, 1).contiguous())
 
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
