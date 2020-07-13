@@ -28,7 +28,7 @@ class SKConv(nn.Module):
         for i in range(M):
             # 为提高效率，原论文中 扩张卷积5x5为 （3X3，dilation=2）来代替。 且论文中建议组卷积G=32
             self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=1,bias=False),
-                                        #    nn.BatchNorm2d(out_channels),
+                                           nn.BatchNorm2d(out_channels),
                                            nn.ReLU(inplace=True)))
         self.global_pool=nn.AdaptiveAvgPool2d(1) # 自适应pool到指定维度    这里指定为1，实现 GAP
         self.fc1=nn.Sequential(nn.Conv2d(out_channels,d,1,bias=False),
@@ -113,29 +113,28 @@ class SSD(nn.Module):
 
         ## sknet
         self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=2)
-        multibox_loc_1 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
-        multibox_conf_1 = nn.Conv2d(128+256, 4*2, kernel_size=7, padding=3)
+        multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
+        multibox_conf_1 = nn.Conv2d(64+128, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
         self.sk_conv_2 = SKConv(in_channels=128, out_channels=128, M=2)
-        multibox_loc_2 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
-        multibox_conf_2 = nn.Conv2d(256+512, 4*2, kernel_size=7, padding=3)
+        multibox_loc_2 = nn.Conv2d(64+128, 4*4, kernel_size=3, padding=1)
+        multibox_conf_2 = nn.Conv2d(128+256, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
         self.sk_conv_3 = SKConv(in_channels=256, out_channels=256, M=2)
-        multibox_loc_3 = nn.Conv2d(768, 4*4, kernel_size=3, padding=1)
-        multibox_conf_3 = nn.Conv2d(512+512, 4*2, kernel_size=7, padding=3)
+        multibox_loc_3 = nn.Conv2d(128+256, 4*4, kernel_size=3, padding=1)
+        multibox_conf_3 = nn.Conv2d(256+512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
         self.sk_conv_4 = SKConv(in_channels=512, out_channels=512, M=2)
-        multibox_loc_4 = nn.Conv2d(1024, 4*4, kernel_size=3, padding=1)
-        multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=7, padding=3)
+        multibox_loc_4 = nn.Conv2d(256+512, 4*4, kernel_size=3, padding=1)
+        multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
-
 
         self.loc = nn.ModuleList(loc_layers)
         self.conf = nn.ModuleList(conf_layers)
@@ -169,35 +168,46 @@ class SSD(nn.Module):
         loc = list()
         conf = list()
 
-        x = self.sk_conv_1(x)
+        # block 1
+        x = self.conv_1_1(x)
+        x = self.conv_1_2(x)
         x = self.max_pool(x)
+        x = self.sk_conv_1(x)
         feature_map_1 = x
 
-        x = self.sk_conv_2(x)
+        # block 2
+        x = self.conv_2_1(x)
+        x = self.conv_2_2(x)
         x = self.max_pool(x)
+        x = self.sk_conv_2(x)
         feature_map_2 = x
 
-        x = self.sk_conv_3(x)
+        # block 3
+        x = self.conv_3_1(x)
+        x = self.conv_3_2(x)
+        x = self.conv_3_3(x)
         x = self.max_pool(x)
+        x = self.sk_conv_3(x)
         feature_map_3 = x
 
-        x = self.sk_conv_4(x)
+        # block 4
+        x = self.conv_4_1(x)
+        x = self.conv_4_2(x)
+        x = self.conv_4_3(x)
         x = self.max_pool(x)
+        x = self.sk_conv_4(x)
         feature_map_4 = x
 
-        x = self.sk_conv_5(x)
-        x = self.max_pool(x)
-        feature_map_5 = x
+        # fpn
+        fpn_map_loc_1 = feature_map_1
+        fpn_map_loc_2 = torch.cat((self.max_pool(feature_map_1), feature_map_2), 1)
+        fpn_map_loc_3 = torch.cat((self.max_pool(feature_map_2), feature_map_3), 1)
+        fpn_map_loc_4 = torch.cat((self.max_pool(feature_map_3), feature_map_4), 1)
 
-        fpn_map_loc_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
-        fpn_map_loc_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
-        fpn_map_loc_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
-        fpn_map_loc_4 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
-
-        fpn_map_conf_1 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
-        fpn_map_conf_2 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
-        fpn_map_conf_3 = torch.cat((feature_map_4, self.upsample(feature_map_5)), 1)
-        fpn_map_conf_4 = feature_map_5
+        fpn_map_conf_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
+        fpn_map_conf_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
+        fpn_map_conf_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
+        fpn_map_conf_4 = feature_map_4
 
         sources_loc = []
         sources_loc.append(fpn_map_loc_1)
