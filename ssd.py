@@ -28,7 +28,7 @@ class SKConv(nn.Module):
         for i in range(M):
             # 为提高效率，原论文中 扩张卷积5x5为 （3X3，dilation=2）来代替。 且论文中建议组卷积G=32
             self.conv.append(nn.Sequential(nn.Conv2d(in_channels,out_channels,3,stride,padding=1+i,dilation=1+i,groups=1,bias=False),
-                                        #    nn.BatchNorm2d(out_channels),
+                                           nn.BatchNorm2d(out_channels),
                                            nn.ReLU(inplace=True)))
         self.global_pool=nn.AdaptiveAvgPool2d(1) # 自适应pool到指定维度    这里指定为1，实现 GAP
         self.fc1=nn.Sequential(nn.Conv2d(out_channels,d,1,bias=False),
