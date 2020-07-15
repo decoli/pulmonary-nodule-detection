@@ -109,6 +109,7 @@ class SSD(nn.Module):
         ## utility
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.avg_pool = nn.AvgPool2d(kernel_size=2, stride=2)
         self.dropout = nn.Dropout2d()
 
         ## fpn
@@ -182,44 +183,44 @@ class SSD(nn.Module):
         # block 1
         x = self.conv_1_1(x)
         x = self.conv_1_2(x)
-        x = self.max_pool(x)
         x = self.sk_conv_1(x)
+        x = self.max_pool(x)
         feature_map_1 = x
 
         # block 2
         x = self.conv_2_1(x)
         x = self.conv_2_2(x)
-        x = self.max_pool(x)
         x = self.sk_conv_2(x)
+        x = self.max_pool(x)
         feature_map_2 = x
 
         # block 3
         x = self.conv_3_1(x)
         x = self.conv_3_2(x)
         x = self.conv_3_3(x)
-        x = self.max_pool(x)
         x = self.sk_conv_3(x)
+        x = self.max_pool(x)
         feature_map_3 = x
 
         # block 4
         x = self.conv_4_1(x)
         x = self.conv_4_2(x)
         x = self.conv_4_3(x)
-        x = self.max_pool(x)
         x = self.sk_conv_4(x)
+        x = self.max_pool(x)
         feature_map_4 = x
 
         # fpn
         ## loc
         fpn_map_loc_1 = feature_map_1
 
-        fpn_map_loc_2 = torch.cat((self.max_pool(feature_map_1), feature_map_2), 1)
+        fpn_map_loc_2 = torch.cat((self.avg_pool(feature_map_1), feature_map_2), 1)
         fpn_map_loc_2 = self.conv_fpn_2_loc(fpn_map_loc_2)
 
-        fpn_map_loc_3 = torch.cat((self.max_pool(feature_map_2), feature_map_3), 1)
+        fpn_map_loc_3 = torch.cat((self.avg_pool(feature_map_2), feature_map_3), 1)
         fpn_map_loc_3 = self.conv_fpn_3_loc(fpn_map_loc_3)
 
-        fpn_map_loc_4 = torch.cat((self.max_pool(feature_map_3), feature_map_4), 1)
+        fpn_map_loc_4 = torch.cat((self.avg_pool(feature_map_3), feature_map_4), 1)
         fpn_map_loc_4 = self.conv_fpn_4_loc(fpn_map_loc_4)
 
         ## conf
