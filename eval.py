@@ -176,6 +176,8 @@ def write_voc_results_file(all_boxes, dataset):
 def do_python_eval(output_dir='output', use_07=True):
     cachedir = os.path.join(devkit_path, 'annotations_cache')
     aps = []
+    recs = []
+    precs = []
     # The PASCAL VOC metric changed in 2010
     use_07_metric = use_07
     print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
@@ -187,10 +189,14 @@ def do_python_eval(output_dir='output', use_07=True):
            filename, annopath, imgsetpath.format(set_type), cls, cachedir,
            ovthresh=0.5, use_07_metric=use_07_metric)
         aps += [ap]
+        recs += [rec]
+        precs += [prec]
         print('AP for {} = {:.4f}'.format(cls, ap))
         with open(os.path.join(output_dir, cls + '_pr.pkl'), 'wb') as f:
             pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
     print('Mean AP = {:.4f}'.format(np.mean(aps)))
+    print('Average Recall = {:.4f}'.format(np.mean(recs)))
+    print('Average Precision = {:.4f}'.format(np.mean(precs)))
     print('~~~~~~~~')
     print('Results:')
     for ap in aps:
