@@ -106,15 +106,19 @@ class SSD(nn.Module):
         self.conv_4_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.conv_4_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
 
-        ## utility
-        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
-        self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.dropout = nn.Dropout2d()
+        self.bn_1_1 = nn.BatchNorm2d(64)
+        self.bn_1_2 = nn.BatchNorm2d(64)
 
-        self.bn_1 = nn.BatchNorm2d(64)
-        self.bn_2 = nn.BatchNorm2d(128)
-        self.bn_3 = nn.BatchNorm2d(256)
-        self.bn_4 = nn.BatchNorm2d(512)
+        self.bn_2_1 = nn.BatchNorm2d(128)
+        self.bn_2_2 = nn.BatchNorm2d(128)
+
+        self.bn_3_1 = nn.BatchNorm2d(256)
+        self.bn_3_2 = nn.BatchNorm2d(256)
+        self.bn_3_3 = nn.BatchNorm2d(256)
+
+        self.bn_4_1 = nn.BatchNorm2d(512)
+        self.bn_4_2 = nn.BatchNorm2d(512)
+        self.bn_4_3 = nn.BatchNorm2d(512)
 
         # self.l2n_loc_1 = L2Norm(64, 20)
         # self.l2n_loc_2 = L2Norm(96, 20)
@@ -193,38 +197,66 @@ class SSD(nn.Module):
         loc = list()
         conf = list()
 
+        ## utility
+        upsample = nn.Upsample(scale_factor=2, mode='nearest')
+        max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        dropout = nn.Dropout2d()
+        relu = nn.ReLU(inplace=True)
+
         # block 1
         x = self.conv_1_1(x)
+        x = self.bn_1_1(x)
+        x = relu(x)
+
         x = self.conv_1_2(x)
-        x = self.bn_1(x)
-        # x = self.sk_conv_1(x)
-        x = self.max_pool(x)
+        x = self.bn_1_2(x)
+        x = relu(x)
+
+        x = max_pool(x)
         feature_map_1 = x
 
         # block 2
         x = self.conv_2_1(x)
+        x = self.bn_2_1(x)
+        x = relu(x)
+
         x = self.conv_2_2(x)
-        x = self.bn_2(x)
-        x = self.max_pool(x)
-        # x = self.sk_conv_2(x)
+        x = self.bn_2_2(x)
+        x = relu(x)
+
+        x = max_pool(x)
         feature_map_2 = x
 
         # block 3
         x = self.conv_3_1(x)
+        x = self.bn_3_1(x)
+        x = relu(x)
+
         x = self.conv_3_2(x)
+        x = self.bn_3_2(x)
+        x = relu(x)
+
         x = self.conv_3_3(x)
-        x = self.bn_3(x)
-        x = self.max_pool(x)
-        # x = self.sk_conv_3(x)
+        x = self.bn_3_3(x)
+        x = relu(x)
+
+        x = max_pool(x)
         feature_map_3 = x
 
         # block 4
         x = self.conv_4_1(x)
+        x = self.bn_4_1(x)
+        x = relu(x)
+
         x = self.conv_4_2(x)
+        x = self.bn_4_2(x)
+        x = relu(x)
+
         x = self.conv_4_3(x)
-        x = self.bn_4(x)
-        x = self.max_pool(x)
-        # x = self.sk_conv_4(x)
+        X = self.bn_4_3(x)
+        x = relu(x)
+
+        x = max_pool(x)
         feature_map_4 = x
 
         # fpn
@@ -241,14 +273,17 @@ class SSD(nn.Module):
         fpn_map_loc_4 = feature_map_4
 
         ## conf
-        fpn_map_conf_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
+        fpn_map_conf_1 = torch.cat((feature_map_1, upsample(feature_map_2)), 1)
         fpn_map_conf_1 = self.conv_fpn_1_conf(fpn_map_conf_1)
+        fpn_map_conf_1 = relu(fpn_map_conf_1)
 
-        fpn_map_conf_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
+        fpn_map_conf_2 = torch.cat((feature_map_2, upsample(feature_map_3)), 1)
         fpn_map_conf_2 = self.conv_fpn_2_conf(fpn_map_conf_2)
+        fpn_map_conf_2 = relu(fpn_map_conf_2)
 
-        fpn_map_conf_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
+        fpn_map_conf_3 = torch.cat((feature_map_3, upsample(feature_map_4)), 1)
         fpn_map_conf_3 = self.conv_fpn_3_conf(fpn_map_conf_3)
+        fpn_map_conf_3 = relu(fpn_map_conf_3)
 
         fpn_map_conf_4 = feature_map_4
 
