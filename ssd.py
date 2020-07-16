@@ -109,55 +109,54 @@ class SSD(nn.Module):
         ## utility
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.avg_pool = nn.AvgPool2d(kernel_size=2, stride=2)
         self.dropout = nn.Dropout2d()
 
-        self.l2n_loc_1 = L2Norm(64, 20)
-        self.l2n_loc_2 = L2Norm(96, 20)
-        self.l2n_loc_3 = L2Norm(192, 20)
-        self.l2n_loc_4 = L2Norm(384, 20)
+        self.bn_1 = nn.BatchNorm2d(64)
+        self.bn_2 = nn.BatchNorm2d(128)
+        self.bn_3 = nn.BatchNorm2d(256)
+        self.bn_4 = nn.BatchNorm2d(512)
 
-        self.l2n_conv_1 = L2Norm(96, 20)
-        self.l2n_conv_2 = L2Norm(192, 20)
-        self.l2n_conv_3 = L2Norm(384, 20)
-        self.l2n_conv_4 = L2Norm(512, 20)
+        # self.l2n_loc_1 = L2Norm(64, 20)
+        # self.l2n_loc_2 = L2Norm(96, 20)
+        # self.l2n_loc_3 = L2Norm(192, 20)
+        # self.l2n_loc_4 = L2Norm(384, 20)
+
+        # self.l2n_conv_1 = L2Norm(96, 20)
+        # self.l2n_conv_2 = L2Norm(192, 20)
+        # self.l2n_conv_3 = L2Norm(384, 20)
+        # self.l2n_conv_4 = L2Norm(512, 20)
 
         ## fpn
         self.conv_fpn_1_conf = nn.Conv2d(192, 96, kernel_size=3, padding=1)
 
-        self.conv_fpn_2_loc = nn.Conv2d(192, 96, kernel_size=3, padding=1)
+        # self.conv_fpn_2_loc = nn.Conv2d(192, 96, kernel_size=3, padding=1)
         self.conv_fpn_2_conf = nn.Conv2d(384, 192, kernel_size=3, padding=1)
 
-        self.conv_fpn_3_loc = nn.Conv2d(384, 192, kernel_size=3, padding=1)
+        # self.conv_fpn_3_loc = nn.Conv2d(384, 192, kernel_size=3, padding=1)
         self.conv_fpn_3_conf = nn.Conv2d(768, 384, kernel_size=3, padding=1)
 
-        self.conv_fpn_4_loc = nn.Conv2d(768, 384, kernel_size=3, padding=1)
+        # self.conv_fpn_4_loc = nn.Conv2d(768, 384, kernel_size=3, padding=1)
 
-        # bn
-        self.bn_1 = nn.BatchNorm2d(64)
         # self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
         multibox_conf_1 = nn.Conv2d(96, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_1)
         conf_layers.append(multibox_conf_1)
 
-        self.bn_2 = nn.BatchNorm2d(128)
         # self.sk_conv_2 = SKConv(in_channels=128, out_channels=128, M=2)
-        multibox_loc_2 = nn.Conv2d(96, 4*4, kernel_size=3, padding=1)
+        multibox_loc_2 = nn.Conv2d(128, 4*4, kernel_size=3, padding=1)
         multibox_conf_2 = nn.Conv2d(192, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_2)
         conf_layers.append(multibox_conf_2)
 
-        self.bn_3 = nn.BatchNorm2d(256)
-        self.sk_conv_3 = SKConv(in_channels=256, out_channels=256, M=2)
-        multibox_loc_3 = nn.Conv2d(192, 4*4, kernel_size=3, padding=1)
+        # self.sk_conv_3 = SKConv(in_channels=256, out_channels=256, M=2)
+        multibox_loc_3 = nn.Conv2d(256, 4*4, kernel_size=3, padding=1)
         multibox_conf_3 = nn.Conv2d(384, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_3)
         conf_layers.append(multibox_conf_3)
 
-        self.bn_4 = nn.BatchNorm2d(512)
-        self.sk_conv_4 = SKConv(in_channels=512, out_channels=512, M=2)
-        multibox_loc_4 = nn.Conv2d(384, 4*4, kernel_size=3, padding=1)
+        # self.sk_conv_4 = SKConv(in_channels=512, out_channels=512, M=2)
+        multibox_loc_4 = nn.Conv2d(512, 4*4, kernel_size=3, padding=1)
         multibox_conf_4 = nn.Conv2d(512, 4*2, kernel_size=3, padding=1)
         loc_layers.append(multibox_loc_4)
         conf_layers.append(multibox_conf_4)
@@ -197,68 +196,61 @@ class SSD(nn.Module):
         # block 1
         x = self.conv_1_1(x)
         x = self.conv_1_2(x)
-        # x = self.sk_conv_1(x)
         x = self.bn_1(x)
+        # x = self.sk_conv_1(x)
         x = self.max_pool(x)
         feature_map_1 = x
 
         # block 2
         x = self.conv_2_1(x)
         x = self.conv_2_2(x)
-        # x = self.sk_conv_2(x)
         x = self.bn_2(x)
         x = self.max_pool(x)
+        # x = self.sk_conv_2(x)
         feature_map_2 = x
 
         # block 3
         x = self.conv_3_1(x)
         x = self.conv_3_2(x)
         x = self.conv_3_3(x)
-        x = self.sk_conv_3(x)
+        x = self.bn_3(x)
         x = self.max_pool(x)
-        # x = self.bn_3(x)
+        # x = self.sk_conv_3(x)
         feature_map_3 = x
 
         # block 4
         x = self.conv_4_1(x)
         x = self.conv_4_2(x)
         x = self.conv_4_3(x)
-        x = self.sk_conv_4(x)
+        x = self.bn_4(x)
         x = self.max_pool(x)
-        # x = self.bn_4(x)
+        # x = self.sk_conv_4(x)
         feature_map_4 = x
 
         # fpn
         ## loc
-        fpn_map_loc_1 = self.l2n_loc_1(feature_map_1)
+        fpn_map_loc_1 = feature_map_1
 
-        fpn_map_loc_2 = torch.cat((self.avg_pool(feature_map_1), feature_map_2), 1)
-        fpn_map_loc_2 = self.conv_fpn_2_loc(fpn_map_loc_2)
-        fpn_map_loc_2 = self.l2n_loc_2(fpn_map_loc_2)
+        # fpn_map_loc_2 = torch.cat((self.max_pool(feature_map_1), feature_map_2), 1)
+        fpn_map_loc_2 = feature_map_2
 
-        fpn_map_loc_3 = torch.cat((self.avg_pool(feature_map_2), feature_map_3), 1)
-        fpn_map_loc_3 = self.conv_fpn_3_loc(fpn_map_loc_3)
-        fpn_map_loc_3 = self.l2n_loc_3(fpn_map_loc_3)
+        # fpn_map_loc_3 = torch.cat((self.max_pool(feature_map_2), feature_map_3), 1)
+        fpn_map_loc_3 = feature_map_3
 
-        fpn_map_loc_4 = torch.cat((self.avg_pool(feature_map_3), feature_map_4), 1)
-        fpn_map_loc_4 = self.conv_fpn_4_loc(fpn_map_loc_4)
-        fpn_map_loc_4 = self.l2n_loc_4(fpn_map_loc_4)
+        # fpn_map_loc_4 = torch.cat((self.max_pool(feature_map_3), feature_map_4), 1)
+        fpn_map_loc_4 = feature_map_4
 
         ## conf
         fpn_map_conf_1 = torch.cat((feature_map_1, self.upsample(feature_map_2)), 1)
         fpn_map_conf_1 = self.conv_fpn_1_conf(fpn_map_conf_1)
-        fpn_map_conf_1 = self.l2n_conv_1(fpn_map_conf_1)
 
         fpn_map_conf_2 = torch.cat((feature_map_2, self.upsample(feature_map_3)), 1)
         fpn_map_conf_2 = self.conv_fpn_2_conf(fpn_map_conf_2)
-        fpn_map_conf_2 = self.l2n_conv_2(fpn_map_conf_2)
 
         fpn_map_conf_3 = torch.cat((feature_map_3, self.upsample(feature_map_4)), 1)
         fpn_map_conf_3 = self.conv_fpn_3_conf(fpn_map_conf_3)
-        fpn_map_conf_3 = self.l2n_conv_3(fpn_map_conf_3)
 
         fpn_map_conf_4 = feature_map_4
-        fpn_map_conf_4 = self.l2n_conv_4(fpn_map_conf_4)
 
         # source
         sources_loc = []
