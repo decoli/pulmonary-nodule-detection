@@ -120,26 +120,31 @@ class SSD(nn.Module):
         self.bn_4_2 = nn.BatchNorm2d(512)
         self.bn_4_3 = nn.BatchNorm2d(512)
 
-        # self.l2n_loc_1 = L2Norm(64, 20)
-        # self.l2n_loc_2 = L2Norm(96, 20)
-        # self.l2n_loc_3 = L2Norm(192, 20)
-        # self.l2n_loc_4 = L2Norm(384, 20)
+        # conv stride=2
+        self.conv_s_1 = nn.Conv2d(64, 64, kernel_size=3, padding=1, stride=2)
+        self.conv_s_2 = nn.Conv2d(128, 128, kernel_size=3, padding=1, stride=2)
+        self.conv_s_3 = nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=2)
 
-        # self.l2n_conv_1 = L2Norm(96, 20)
-        # self.l2n_conv_2 = L2Norm(192, 20)
-        # self.l2n_conv_3 = L2Norm(384, 20)
-        # self.l2n_conv_4 = L2Norm(512, 20)
+        self.l2n_loc_1 = L2Norm(64, 20)
+        self.l2n_loc_2 = L2Norm(128, 20)
+        self.l2n_loc_3 = L2Norm(256, 20)
+        self.l2n_loc_4 = L2Norm(512, 20)
+
+        self.l2n_conf_1 = L2Norm(96, 20)
+        self.l2n_conf_2 = L2Norm(192, 20)
+        self.l2n_conf_3 = L2Norm(384, 20)
+        self.l2n_conf_4 = L2Norm(512, 20)
 
         ## fpn
         self.conv_fpn_1_conf = nn.Conv2d(192, 96, kernel_size=3, padding=1)
 
-        # self.conv_fpn_2_loc = nn.Conv2d(192, 96, kernel_size=3, padding=1)
+        self.conv_fpn_2_loc = nn.Conv2d(192, 128, kernel_size=3, padding=1)
         self.conv_fpn_2_conf = nn.Conv2d(384, 192, kernel_size=3, padding=1)
 
-        # self.conv_fpn_3_loc = nn.Conv2d(384, 192, kernel_size=3, padding=1)
+        self.conv_fpn_3_loc = nn.Conv2d(384, 256, kernel_size=3, padding=1)
         self.conv_fpn_3_conf = nn.Conv2d(768, 384, kernel_size=3, padding=1)
 
-        # self.conv_fpn_4_loc = nn.Conv2d(768, 384, kernel_size=3, padding=1)
+        self.conv_fpn_4_loc = nn.Conv2d(768, 512, kernel_size=3, padding=1)
 
         # self.sk_conv_1 = SKConv(in_channels=64, out_channels=64, M=2)
         multibox_loc_1 = nn.Conv2d(64, 4*4, kernel_size=3, padding=1)
@@ -263,14 +268,17 @@ class SSD(nn.Module):
         ## loc
         fpn_map_loc_1 = feature_map_1
 
-        # fpn_map_loc_2 = torch.cat((self.max_pool(feature_map_1), feature_map_2), 1)
-        fpn_map_loc_2 = feature_map_2
+        fpn_map_loc_2 = torch.cat((self.conv_s_1(feature_map_1), feature_map_2), 1)
+        fpn_map_loc_2 = self.conv_fpn_2_loc(fpn_map_loc_2)
+        fpn_map_loc_2 = relu(fpn_map_loc_2)
 
-        # fpn_map_loc_3 = torch.cat((self.max_pool(feature_map_2), feature_map_3), 1)
-        fpn_map_loc_3 = feature_map_3
+        fpn_map_loc_3 = torch.cat((self.conv_s_2(feature_map_2), feature_map_3), 1)
+        fpn_map_loc_3 = self.conv_fpn_3_loc(fpn_map_loc_3)
+        fpn_map_loc_3 = relu(fpn_map_loc_3)
 
-        # fpn_map_loc_4 = torch.cat((self.max_pool(feature_map_3), feature_map_4), 1)
-        fpn_map_loc_4 = feature_map_4
+        fpn_map_loc_4 = torch.cat((self.conv_s_3(feature_map_3), feature_map_4), 1)
+        fpn_map_loc_4 = self.conv_fpn_4_loc(fpn_map_loc_4)
+        fpn_map_loc_4 = relu(fpn_map_loc_4)
 
         ## conf
         fpn_map_conf_1 = torch.cat((feature_map_1, upsample(feature_map_2)), 1)
@@ -289,16 +297,16 @@ class SSD(nn.Module):
 
         # source
         sources_loc = []
-        sources_loc.append(fpn_map_loc_1)
-        sources_loc.append(fpn_map_loc_2)
-        sources_loc.append(fpn_map_loc_3)
-        sources_loc.append(fpn_map_loc_4)
+        sources_loc.append(self.l2n_loc_1(fpn_map_loc_1))
+        sources_loc.append(self.l2n_loc_2(fpn_map_loc_2))
+        sources_loc.append(self.l2n_loc_3(fpn_map_loc_3))
+        sources_loc.append(self.l2n_loc_4(fpn_map_loc_4))
 
         sources_conf = []
-        sources_conf.append(fpn_map_conf_1)
-        sources_conf.append(fpn_map_conf_2)
-        sources_conf.append(fpn_map_conf_3)
-        sources_conf.append(fpn_map_conf_4)
+        sources_conf.append(self.l2n_conf_1(fpn_map_conf_1))
+        sources_conf.append(self.l2n_conf_2(fpn_map_conf_2))
+        sources_conf.append(self.l2n_conf_3(fpn_map_conf_3))
+        sources_conf.append(self.l2n_conf_4(fpn_map_conf_4))
 
         # apply multibox head to source layers
 
