@@ -26,3 +26,4 @@ weights/*
 data/LUNA16/negative/
 !data/LUNA16/negative/negative_anno.csv
 data/LUNA16/masked.zip
+backup/
