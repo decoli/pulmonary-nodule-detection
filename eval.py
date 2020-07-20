@@ -420,17 +420,23 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             cls_dets = np.hstack((boxes.cpu().numpy(),
                                   scores[:, np.newaxis])).astype(np.float32,
                                                                  copy=False)
+            # clean up the dets
+            num_box = cls_dets.shape[0]
+            list_clean_up = []
+            for each_box_index in range(num_box):
+                each_box = cls_dets[each_box_index]
+                if each_box[4] < thresh:
+                    list_clean_up.append(each_box_index)
+            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
             all_boxes[j][i] = cls_dets
 
             if args.debug:
                 cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                 cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
                 if args.only_best_pred: # flag: only draw the best pred box
                     num_draw_box = 1
                 else:
                     num_draw_box = boxes.shape[0]
-
                 for k in range(num_draw_box):
                     if args.pred_threshold < scores[k]: # set threshold for draw boxes
                         point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
@@ -438,6 +444,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
                         cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
                         print(scores[k])
+
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time), end='', flush=True)
     print('')
