@@ -404,6 +404,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         detections = net(x).data
         detect_time = _t['im_detect'].toc(average=False)
 
+        back_colour = int(img_original[0,0,0] + 0.5)
         # skip j = 0, because it's the background class
         for j in range(1, detections.size(1)):
             dets = detections[0, j, :]
@@ -421,6 +422,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                   scores[:, np.newaxis])).astype(np.float32,
                                                                  copy=False)
             # clean up the dets
+            ## set thresh
             num_box = cls_dets.shape[0]
             list_clean_up = []
             for each_box_index in range(num_box):
@@ -428,22 +430,55 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 if each_box[4] < thresh:
                     list_clean_up.append(each_box_index)
             cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+            ## clean up background boxes
+            num_box = cls_dets.shape[0]
+            list_clean_up = []
+            for each_box_index in range(num_box):
+                each_box = cls_dets[each_box_index]
+                x_1 = int(each_box[0] + 0.5)
+                y_1 = int(each_box[1] + 0.5)
+                x_2 = int(each_box[2] + 0.5)
+                y_2 = int(each_box[3] + 0.5)
+                image_box = img_original[y_1: y_2, x_1: x_2]
+                cv2.imwrite('test/test_box.png', image_box)
+
+                range_index_0 = image_box.shape[0]
+                range_index_1 = image_box.shape[1]
+                
+                count_back_colour = 0
+                for index_0 in range(range_index_0):
+                    for index_1 in range(range_index_1):
+                        if image_box[index_0][index_1][0] == back_colour:
+                            count_back_colour += 1
+                if count_back_colour / (range_index_0 * range_index_1) > 0.5:
+                    list_clean_up.append(each_box_index)
+
+                if args.debug:
+                    point_left_up = (x_1, y_1)
+                    point_right_down = (x_2, y_2)
+                    cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                    cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+            ## set all_boxes[j][i] = cls_dets
             all_boxes[j][i] = cls_dets
 
-            if args.debug:
-                cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-                cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-                if args.only_best_pred: # flag: only draw the best pred box
-                    num_draw_box = 1
-                else:
-                    num_draw_box = boxes.shape[0]
-                for k in range(num_draw_box):
-                    if args.pred_threshold < scores[k]: # set threshold for draw boxes
-                        point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
-                        point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
-                        cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                        cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-                        print(scores[k])
+            # if args.debug:
+            #     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+            #     cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+            #     if args.only_best_pred: # flag: only draw the best pred box
+            #         num_draw_box = 1
+            #     else:
+            #         num_draw_box = boxes.shape[0]
+            #     for k in range(num_draw_box):
+            #         if args.pred_threshold < scores[k]: # set threshold for draw boxes
+            #             point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
+            #             point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
+            #             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+            #             cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+            #             print(scores[k])
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time), end='', flush=True)
