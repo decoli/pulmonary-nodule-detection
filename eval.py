@@ -471,9 +471,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
          
             ## top-k
-            k = 3
             list_clean_up = list(range(cls_dets.shape[0]))
-            del(list_clean_up[0: k])
+            del(list_clean_up[0: top_k])
             cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
             # show cleaned boxes
