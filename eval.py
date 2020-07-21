@@ -5,23 +5,25 @@
 """
 
 from __future__ import print_function
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-from data import VOC_ROOT, VOCAnnotationTransform, VOCDetection, BaseTransform
-from data import VOC_CLASSES as labelmap
-import torch.utils.data as data
 
-from ssd import build_ssd
-
-import sys
-import os
-import time
 import argparse
-import numpy as np
+import os
 import pickle
+import sys
+import time
+
 import cv2
+import numpy as np
+import torch
+import torch.backends.cudnn as cudnn
+import torch.nn as nn
+import torch.utils.data as data
+from torch.autograd import Variable
+
+from data import VOC_CLASSES as labelmap
+from data import VOC_ROOT, BaseTransform, VOCAnnotationTransform, VOCDetection
+from layers.box_utils import nms
+from ssd import build_ssd
 
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
@@ -422,6 +424,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                   scores[:, np.newaxis])).astype(np.float32,
                                                                  copy=False)
             # clean up the dets
+            ## nms
+            # keep, count = nms(torch.Tensor(boxes), torch.Tensor(scores), top_k=10)
+
+            # list_keep = list(np.array(keep))
+            # if not keep.size(0) == count:
+            #     print('')
+
             ## set thresh
             num_box = cls_dets.shape[0]
             list_clean_up = []
@@ -460,13 +469,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     list_clean_up.append(each_box_index)
 
             cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
-            
-                # if args.debug:
-                #     cv2.imwrite('test/test_box.png', image_box)
-                #     point_left_up = (x_1, y_1)
-                #     point_right_down = (x_2, y_2)
-                #     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                #     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+         
+            ## top-k
+            k = 3
+            list_clean_up = list(range(cls_dets.shape[0]))
+            del(list_clean_up[0: k])
+            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
             # show cleaned boxes
             if args.debug:
