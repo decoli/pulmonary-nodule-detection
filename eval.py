@@ -441,7 +441,6 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 x_2 = int(each_box[2] + 0.5)
                 y_2 = int(each_box[3] + 0.5)
                 image_box = img_original[y_1: y_2, x_1: x_2]
-                cv2.imwrite('test/test_box.png', image_box)
 
                 range_index_0 = image_box.shape[0]
                 range_index_1 = image_box.shape[1]
@@ -455,6 +454,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     list_clean_up.append(each_box_index)
 
                 if args.debug:
+                    cv2.imwrite('test/test_box.png', image_box)
                     point_left_up = (x_1, y_1)
                     point_right_down = (x_2, y_2)
                     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
