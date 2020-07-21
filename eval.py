@@ -450,7 +450,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     for index_1 in range(range_index_1):
                         if image_box[index_0][index_1][0] == back_colour:
                             count_back_colour += 1
-                if count_back_colour / (range_index_0 * range_index_1) > 0.5:
+
+                condition_1 = x_1 < 0 or x_2 < 0 or y_1 < 0 or y_2 < 0
+                condition_2 = range_index_0 == 0 or range_index_1 == 0
+                if condition_2:
+                    list_clean_up.append(each_box_index)
+                    continue
+                if count_back_colour / (range_index_0 * range_index_1) > 0.5 or condition_1:
                     list_clean_up.append(each_box_index)
 
                 if args.debug:
