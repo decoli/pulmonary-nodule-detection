@@ -459,14 +459,30 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 if count_back_colour / (range_index_0 * range_index_1) > 0.5 or condition_1:
                     list_clean_up.append(each_box_index)
 
-                if args.debug:
-                    cv2.imwrite('test/test_box.png', image_box)
+            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+            
+                # if args.debug:
+                #     cv2.imwrite('test/test_box.png', image_box)
+                #     point_left_up = (x_1, y_1)
+                #     point_right_down = (x_2, y_2)
+                #     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                #     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+            # show cleaned boxes
+            if args.debug:
+                num_box = cls_dets.shape[0]
+                for each_box_index in range(num_box):
+                    each_box = cls_dets[each_box_index]
+
+                    x_1 = int(each_box[0] + 0.5)
+                    y_1 = int(each_box[1] + 0.5)
+                    x_2 = int(each_box[2] + 0.5)
+                    y_2 = int(each_box[3] + 0.5)
+
                     point_left_up = (x_1, y_1)
                     point_right_down = (x_2, y_2)
                     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
                     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-
-            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
             ## set all_boxes[j][i] = cls_dets
             all_boxes[j][i] = cls_dets
