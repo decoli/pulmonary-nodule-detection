@@ -132,6 +132,7 @@ class VOCDetection(data.Dataset):
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
         self._imgpath = osp.join('%s', 'JPEGImages', '%s.png')
         self.ids = list()
+        self.dir_eval = 'data/LUNA16/masked/JPEGImages/range_2'
         # for (year, name) in image_sets:
         #     rootpath = osp.join(self.root, 'VOC' + year)
         #     for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
@@ -174,7 +175,30 @@ class VOCDetection(data.Dataset):
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(2, 0, 1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        return img_original, torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        return index, img_id[1], img_original, torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        # return torch.from_numpy(img), target, height, width
+
+    def pull_item_eval(self, index, img_name, img_name_range):
+        img_id = self.ids[index]
+
+        target = ET.parse(self._annopath % img_id).getroot()
+        path_img = osp.join(self.dir_eval, img_name_range)
+        img = cv2.imread(path_img)
+        height, width, channels = img.shape
+        img_original = img
+
+        if self.target_transform is not None:
+            target = self.target_transform(target, width, height)
+
+        if self.transform is not None:
+            target = np.array(target)
+            img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            # img = img.transpose(2, 0, 1)
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+        return img_original, torch.from_numpy(img).permute(2, 0, 1), height, width
         # return torch.from_numpy(img), target, height, width
 
     def pull_image(self, index):

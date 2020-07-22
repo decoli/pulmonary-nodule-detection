@@ -64,6 +64,10 @@ parser.add_argument('--pred_threshold',
                     default=0.0,
                     type=float,
                     help='set the threshold of pred boxes to draw')
+parser.add_argument('--range',
+                    default=0,
+                    type=int,
+                    help='set the range value when eval.')
 
 args = parser.parse_args()
 
@@ -398,114 +402,131 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
     output_dir = get_output_dir('ssd300_120000', set_type)
     det_file = os.path.join(output_dir, 'detections.pkl')
 
+    context_list = ['', 'u', 'd']
+    img_range = args.range
+
+    if img_range == 0:
+        img_range = 1
+        context_list = ['']
+
     for i in range(0, num_images):
-        img_original, im, gt, h, w = dataset.pull_item(i)
+        index, img_name, img_original, im, gt, h, w = dataset.pull_item(i)
 
-        x = Variable(im.unsqueeze(0))
-        if args.cuda and torch.cuda.is_available():
-            x = x.cuda()
-        _t['im_detect'].tic()
-        detections = net(x).data
-        detect_time = _t['im_detect'].toc(average=False)
+        for each_context in context_list:
+            for each_range in range(1, img_range+1):
 
-        back_colour = int(img_original[0,0,0] + 0.5)
-        # skip j = 0, because it's the background class
-        for j in range(1, detections.size(1)):
-            dets = detections[0, j, :]
-            mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
-            dets = torch.masked_select(dets, mask).view(-1, 5)
-            if dets.size(0) == 0:
-                continue
-            boxes = dets[:, 1:]
-            boxes[:, 0] *= w
-            boxes[:, 2] *= w
-            boxes[:, 1] *= h
-            boxes[:, 3] *= h
-            scores = dets[:, 0].cpu().numpy()
-            cls_dets = np.hstack((boxes.cpu().numpy(),
-                                  scores[:, np.newaxis])).astype(np.float32,
-                                                                 copy=False)
-            # clean up the dets
-            ## nms
-            # keep, count = nms(torch.Tensor(boxes), torch.Tensor(scores), top_k=10)
+                if not each_context == '':
+                    img_name_range = '{}_{}_{}.png'.format(img_name, each_context, each_range)
+                    img_original, im, h, w = dataset.pull_item_eval(index, img_name, img_name_range)
 
-            # list_keep = list(np.array(keep))
-            # if not keep.size(0) == count:
-            #     print('')
+                x = Variable(im.unsqueeze(0))
+                if args.cuda and torch.cuda.is_available():
+                    x = x.cuda()
+                _t['im_detect'].tic()
+                detections = net(x).data
+                detect_time = _t['im_detect'].toc(average=False)
 
-            ## set thresh
-            num_box = cls_dets.shape[0]
-            list_clean_up = []
-            for each_box_index in range(num_box):
-                each_box = cls_dets[each_box_index]
-                if each_box[4] < thresh:
-                    list_clean_up.append(each_box_index)
-            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+                back_colour = int(img_original[0,0,0] + 0.5)
+                # skip j = 0, because it's the background class
+                for j in range(1, detections.size(1)):
+                    dets = detections[0, j, :]
+                    mask = dets[:, 0].gt(0.).expand(5, dets.size(0)).t()
+                    dets = torch.masked_select(dets, mask).view(-1, 5)
+                    if dets.size(0) == 0:
+                        continue
+                    boxes = dets[:, 1:]
+                    boxes[:, 0] *= w
+                    boxes[:, 2] *= w
+                    boxes[:, 1] *= h
+                    boxes[:, 3] *= h
+                    scores = dets[:, 0].cpu().numpy()
+                    cls_dets = np.hstack((boxes.cpu().numpy(),
+                                        scores[:, np.newaxis])).astype(np.float32,
+                                                                        copy=False)
+                    # clean up the dets
+                    ## nms
+                    # keep, count = nms(torch.Tensor(boxes), torch.Tensor(scores), top_k=10)
 
-            ## clean up background boxes
-            num_box = cls_dets.shape[0]
-            list_clean_up = []
-            for each_box_index in range(num_box):
-                each_box = cls_dets[each_box_index]
-                x_1 = int(each_box[0] + 0.5)
-                y_1 = int(each_box[1] + 0.5)
-                x_2 = int(each_box[2] + 0.5)
-                y_2 = int(each_box[3] + 0.5)
-                image_box = img_original[y_1: y_2, x_1: x_2]
+                    # list_keep = list(np.array(keep))
+                    # if not keep.size(0) == count:
+                    #     print('')
 
-                range_index_0 = image_box.shape[0]
-                range_index_1 = image_box.shape[1]
+                    ## set thresh
+                    num_box = cls_dets.shape[0]
+                    list_clean_up = []
+                    for each_box_index in range(num_box):
+                        each_box = cls_dets[each_box_index]
+                        if each_box[4] < thresh:
+                            list_clean_up.append(each_box_index)
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+                    ## clean up background boxes
+                    num_box = cls_dets.shape[0]
+                    list_clean_up = []
+                    for each_box_index in range(num_box):
+                        each_box = cls_dets[each_box_index]
+                        x_1 = int(each_box[0] + 0.5)
+                        y_1 = int(each_box[1] + 0.5)
+                        x_2 = int(each_box[2] + 0.5)
+                        y_2 = int(each_box[3] + 0.5)
+                        image_box = img_original[y_1: y_2, x_1: x_2]
+
+                        range_index_0 = image_box.shape[0]
+                        range_index_1 = image_box.shape[1]
+                        
+                        count_back_colour = 0
+                        for index_0 in range(range_index_0):
+                            for index_1 in range(range_index_1):
+                                if image_box[index_0][index_1][0] == back_colour:
+                                    count_back_colour += 1
+
+                        condition_1 = x_1 < 0 or x_2 < 0 or y_1 < 0 or y_2 < 0
+                        condition_2 = range_index_0 == 0 or range_index_1 == 0
+                        if condition_2:
+                            list_clean_up.append(each_box_index)
+                            continue
+                        if count_back_colour / (range_index_0 * range_index_1) > 0.5 or condition_1:
+                            list_clean_up.append(each_box_index)
+
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
                 
-                count_back_colour = 0
-                for index_0 in range(range_index_0):
-                    for index_1 in range(range_index_1):
-                        if image_box[index_0][index_1][0] == back_colour:
-                            count_back_colour += 1
+                    ## top-k
+                    list_clean_up = list(range(cls_dets.shape[0]))
+                    del(list_clean_up[0: top_k])
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
-                condition_1 = x_1 < 0 or x_2 < 0 or y_1 < 0 or y_2 < 0
-                condition_2 = range_index_0 == 0 or range_index_1 == 0
-                if condition_2:
-                    list_clean_up.append(each_box_index)
-                    continue
-                if count_back_colour / (range_index_0 * range_index_1) > 0.5 or condition_1:
-                    list_clean_up.append(each_box_index)
+                    # show cleaned boxes
+                    if args.debug:
+                        num_box = cls_dets.shape[0]
+                        for each_box_index in range(num_box):
+                            each_box = cls_dets[each_box_index]
 
-            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
-         
-            ## top-k
-            list_clean_up = list(range(cls_dets.shape[0]))
-            del(list_clean_up[0: top_k])
-            cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+                            x_1 = int(each_box[0] + 0.5)
+                            y_1 = int(each_box[1] + 0.5)
+                            x_2 = int(each_box[2] + 0.5)
+                            y_2 = int(each_box[3] + 0.5)
 
-            # show cleaned boxes
-            if args.debug:
-                num_box = cls_dets.shape[0]
-                for each_box_index in range(num_box):
-                    each_box = cls_dets[each_box_index]
+                            point_left_up = (x_1, y_1)
+                            point_right_down = (x_2, y_2)
+                            cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                            cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
-                    x_1 = int(each_box[0] + 0.5)
-                    y_1 = int(each_box[1] + 0.5)
-                    x_2 = int(each_box[2] + 0.5)
-                    y_2 = int(each_box[3] + 0.5)
-
-                    point_left_up = (x_1, y_1)
-                    point_right_down = (x_2, y_2)
-                    cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                    # heat map
+                    heat_data = np.zeros((512, 512))
+                    num_box = cls_dets.shape[0]
+                    for each_box_index in range(num_box):
+                        each_box = cls_dets[each_box_index]
+                        x_1 = int(each_box[0] + 0.5)
+                        y_1 = int(each_box[1] + 0.5)
+                        x_2 = int(each_box[2] + 0.5)
+                        y_2 = int(each_box[3] + 0.5)
+                        heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
                     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                    sns.heatmap(heat_data, vmin=0, vmax=1)
+                    plt.show()
 
-            # heat map
-            heat_data = np.zeros((512, 512))
-            num_box = cls_dets.shape[0]
-            for each_box_index in range(num_box):
-                each_box = cls_dets[each_box_index]
-                x_1 = int(each_box[0] + 0.5)
-                y_1 = int(each_box[1] + 0.5)
-                x_2 = int(each_box[2] + 0.5)
-                y_2 = int(each_box[3] + 0.5)
-                heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
-            cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-            sns.heatmap(heat_data, vmin=0, vmax=1)
-            plt.show()
+                if each_context == '':
+                    break
 
             ## set all_boxes[j][i] = cls_dets
             all_boxes[j][i] = cls_dets
