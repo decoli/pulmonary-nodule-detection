@@ -411,6 +411,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
     for i in range(0, num_images):
         index, img_name, img_original, im, gt, h, w = dataset.pull_item(i)
+        list_heat_map = []
 
         for each_context in context_list:
             for each_range in range(1, img_range+1):
@@ -521,15 +522,25 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         x_2 = int(each_box[2] + 0.5)
                         y_2 = int(each_box[3] + 0.5)
                         heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
-                    cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-                    sns.heatmap(heat_data, vmin=0, vmax=1)
-                    plt.show()
+                    cv2.imwrite('test/{}_{}_{}.png'.format(img_name, each_context, each_range), img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
+                    if each_context == '' or each_context == 'd':
+                        list_heat_map.append(heat_data)
+                    elif each_context == 'u':
+                        list_heat_map.insert(0, heat_data)
+
+                    # sns.heatmap(heat_data, vmin=0, vmax=1)
+                    # plt.show()
                 if each_context == '':
                     break
 
-            ## set all_boxes[j][i] = cls_dets
-            all_boxes[j][i] = cls_dets
+        # check heatmap
+        for each_heat_data in list_heat_map:
+            sns.heatmap(heat_data, vmin=0, vmax=1)
+            plt.show()
+
+        ## set all_boxes[j][i] = cls_dets
+        all_boxes[j][i] = cls_dets
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time), end='', flush=True)
