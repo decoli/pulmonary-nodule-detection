@@ -28,7 +28,7 @@ parser.add_argument('--draw_nodule', action='store_true', help='draw the locatio
 parser.add_argument('--nodule_size', default=32, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
 parser.add_argument('--bigger_size', default=1, type=float, help='set the GT size bigger')
 parser.add_argument('--times_movement', default=1, type=int, help='set the times nodule movement for a CT image')
-parser.add_argument('--context_range' default=2, type=int, help='set the range of CT images when mode: get_masked_image')
+parser.add_argument('--context_range', default=2, type=int, help='set the range of CT images when mode: get_masked_image')
 
 parser.add_argument(
     '--mode',choices=[
