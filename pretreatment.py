@@ -28,6 +28,7 @@ parser.add_argument('--draw_nodule', action='store_true', help='draw the locatio
 parser.add_argument('--nodule_size', default=32, type=int, help='set the GT of size of nodule') # default 0 for dynamic size
 parser.add_argument('--bigger_size', default=1, type=float, help='set the GT size bigger')
 parser.add_argument('--times_movement', default=1, type=int, help='set the times nodule movement for a CT image')
+parser.add_argument('--context_range' default=2, type=int, help='set the range of CT images when mode: get_masked_image')
 
 parser.add_argument(
     '--mode',choices=[
@@ -92,9 +93,8 @@ def get_masked_image():
     
         slice = int(voxelCoord[2] + 0.5)
         context_type_list = ['', 'u', 'd']
-        context_range = 2
         for context_type in context_type_list:
-            for context_num in range(1, context_range + 1):
+            for context_num in range(1, args.context_range + 1):
                 if context_type == '':
                     img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
                 elif context_type == 'u':
