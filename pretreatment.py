@@ -67,6 +67,11 @@ def load_itk_image(filename):
     return numpyImage, numpyOrigin, numpySpacing
 
 def get_masked_image():
+    if os.name == 'posix':
+        working_path = '/Volumes/shirui_WD_2/lung_image/all_LUNA16/LUNA16'
+    else:
+        working_path = 'E:\lung_image\\all_LUNA16\\LUNA16'
+    anno_path = 'data/LUNA16/annotations.csv'
     pd_annotation = pd.read_csv(anno_path)
     count_image = 0
     for each_annotation in pd_annotation.iterrows():
@@ -86,92 +91,107 @@ def get_masked_image():
         voxelCoord = worldToVoxelCoord(worldCoord, numpyOrigin, numpySpacing)
     
         slice = int(voxelCoord[2] + 0.5)
-        img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
+        context_type_list = ['', 'u', 'd']
+        context_range = 2
+        for context_type in context_type_list:
+            for context_num in range(1, context_range + 1):
+                if context_type == '':
+                    img = np.squeeze(numpyImage[slice, ...])  # if the img is 3d, the slice is integer
+                elif context_type == 'u':
+                    img = np.squeeze(numpyImage[slice - context_num, ...])
+                elif context_type == 'd':
+                    img = np.squeeze(numpyImage[slice + context_num, ...])
 
-        # 由于肺部与周围组织颜色对比明显，考虑通过聚类的方法找到可区分肺区域和非肺区域的阈值，实现二值化。
-        mean = np.mean(img)
-        std = np.std(img)
-        img = img-mean
-        img = img/std
+                # 由于肺部与周围组织颜色对比明显，考虑通过聚类的方法找到可区分肺区域和非肺区域的阈值，实现二值化。
+                mean = np.mean(img)
+                std = np.std(img)
+                img = img-mean
+                img = img/std
 
-        # K-mean
-        #提取肺部大致均值
-        middle = img[100:400,100:400]  
-        mean = np.mean(middle)  
+                # K-mean
+                #提取肺部大致均值
+                middle = img[100:400,100:400]  
+                mean = np.mean(middle)  
 
-        # 将图片最大值和最小值替换为肺部大致均值
-        max = np.max(img)
-        min = np.min(img)
-        img[img==max]=mean
-        img[img==min]=mean
+                # 将图片最大值和最小值替换为肺部大致均值
+                max = np.max(img)
+                min = np.min(img)
+                img[img==max]=mean
+                img[img==min]=mean
 
-        # image_array = img
-        # f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
-        # ax1.imshow(image_array,cmap='gray')
-        # ax2.hist(img.flatten(),bins=200)
-        # plt.show()
+                # image_array = img
+                # f, (ax1, ax2) = plt.subplots(1, 2,figsize=(8,8))
+                # ax1.imshow(image_array,cmap='gray')
+                # ax2.hist(img.flatten(),bins=200)
+                # plt.show()
 
-        kmeans = KMeans(n_clusters=2).fit(np.reshape(middle,[np.prod(middle.shape),1]))
-        centers = sorted(kmeans.cluster_centers_.flatten())
-        threshold = np.mean(centers)  
-        thresh_img = np.where(img<threshold,1.0,0.0)  # threshold the image
+                kmeans = KMeans(n_clusters=2).fit(np.reshape(middle,[np.prod(middle.shape),1]))
+                centers = sorted(kmeans.cluster_centers_.flatten())
+                threshold = np.mean(centers)  
+                thresh_img = np.where(img<threshold,1.0,0.0)  # threshold the image
 
-        # 聚类完成后，清晰可见偏黑色区域为一类，偏灰色区域为另一类。
-        # image_array = thresh_img
-        # plt.imshow(image_array,cmap='gray') 
-        # plt.show()
+                # 聚类完成后，清晰可见偏黑色区域为一类，偏灰色区域为另一类。
+                # image_array = thresh_img
+                # plt.imshow(image_array,cmap='gray') 
+                # plt.show()
 
-        eroded = morphology.erosion(thresh_img,np.ones([4,4]))  
-        dilation = morphology.dilation(eroded,np.ones([10,10]))  
-        labels = measure.label(dilation)   
-        # fig,ax = plt.subplots(2,2,figsize=[8,8])
-        # ax[0,0].imshow(thresh_img,cmap='gray')  
-        # ax[0,1].imshow(eroded,cmap='gray') 
-        # ax[1,0].imshow(dilation,cmap='gray')  
-        # ax[1,1].imshow(labels)  # 标注mask区域切片图
-        # plt.show()
+                eroded = morphology.erosion(thresh_img,np.ones([4,4]))  
+                dilation = morphology.dilation(eroded,np.ones([10,10]))  
+                labels = measure.label(dilation)   
+                # fig,ax = plt.subplots(2,2,figsize=[8,8])
+                # ax[0,0].imshow(thresh_img,cmap='gray')  
+                # ax[0,1].imshow(eroded,cmap='gray') 
+                # ax[1,0].imshow(dilation,cmap='gray')  
+                # ax[1,1].imshow(labels)  # 标注mask区域切片图
+                # plt.show()
 
-        label_vals = np.unique(labels)
-        regions = measure.regionprops(labels) # 获取连通区域
+                label_vals = np.unique(labels)
+                regions = measure.regionprops(labels) # 获取连通区域
 
-        # 设置经验值，获取肺部标签
-        good_labels = []
-        for prop in regions:
-            B = prop.bbox
-            if B[2]-B[0]<475 and B[3]-B[1]<475 and B[0]>40 and B[2]<472:
-                good_labels.append(prop.label)
-    
-        # 根据肺部标签获取肺部mask，并再次进行’膨胀‘操作，以填满并扩张肺部区域
-        mask = np.ndarray([512,512],dtype=np.int8)
-        mask[:] = 0
-        for N in good_labels:
-            mask = mask + np.where(labels==N,1,0)
-        mask = morphology.dilation(mask,np.ones([10,10])) # one last dilation
+                # 设置经验值，获取肺部标签
+                good_labels = []
+                for prop in regions:
+                    B = prop.bbox
+                    if B[2]-B[0]<475 and B[3]-B[1]<475 and B[0]>40 and B[2]<472:
+                        good_labels.append(prop.label)
+            
+                # 根据肺部标签获取肺部mask，并再次进行’膨胀‘操作，以填满并扩张肺部区域
+                mask = np.ndarray([512,512],dtype=np.int8)
+                mask[:] = 0
+                for N in good_labels:
+                    mask = mask + np.where(labels==N,1,0)
+                mask = morphology.dilation(mask,np.ones([10,10])) # one last dilation
 
-        # flag draw nodule
-        if args.draw_nodule:
-            point_left = int(voxelCoord[0] + 0.5) - 16
-            point_up = int(voxelCoord[1] + 0.5) - 16
-            point_left_up = (int(point_left), int(point_up))
-            point_right = int(voxelCoord[0] + 0.5) + 16
-            point_down = int(voxelCoord[1] + 0.5) + 16
-            point_right_down = (int(point_right), int(point_down))
-            cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 2)
+                # flag draw nodule
+                if args.draw_nodule:
+                    point_left = int(voxelCoord[0] + 0.5) - 16
+                    point_up = int(voxelCoord[1] + 0.5) - 16
+                    point_left_up = (int(point_left), int(point_up))
+                    point_right = int(voxelCoord[0] + 0.5) + 16
+                    point_down = int(voxelCoord[1] + 0.5) + 16
+                    point_right_down = (int(point_right), int(point_down))
+                    cv2.rectangle(img, point_left_up, point_right_down, (0, 0, 255), 2)
 
-        # save the image
-        width = img.shape[0]
-        height = img.shape[1]
-        dpi = 100
-        fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
-        axes = fig.add_axes([0, 0, 1, 1])
-        axes.set_axis_off()
-        axes.imshow(img*mask, cmap='gray')
-        path_img = os.path.join('data/LUNA16/masked/{:06d}.png'.format(count_image))
-        fig.savefig(path_img)
-        plt.close()
-        print(count_image)
+                # save the image
+                width = img.shape[0]
+                height = img.shape[1]
+                dpi = 100
+                fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
+                axes = fig.add_axes([0, 0, 1, 1])
+                axes.set_axis_off()
+                axes.imshow(img*mask, cmap='gray')
 
+                if context_type == '':
+                    path_img = os.path.join('data/LUNA16/masked/test/{:06d}.png'.format(count_image))
+                else:
+                    path_img = os.path.join('data/LUNA16/masked/test/{count_image:06d}_{context_type}_{context_num}.png'.format(
+                        count_image=count_image, context_type=context_type, context_num=context_num))
+                fig.savefig(path_img)
+                plt.close()
+                if context_type == '':
+                    break
         count_image += 1
+        print(count_image)
 
 def negative_get_masked_image():
 
