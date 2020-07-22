@@ -3,7 +3,6 @@
     @rbgirshick py-faster-rcnn https://github.com/rbgirshick/py-faster-rcnn
     Licensed under The MIT License [see LICENSE for details]
 """
-
 from __future__ import print_function
 
 import argparse
@@ -13,11 +12,14 @@ import sys
 import time
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.utils.data as data
+from pyheatmap.heatmap import HeatMap
 from torch.autograd import Variable
 
 from data import VOC_CLASSES as labelmap
@@ -44,7 +46,7 @@ parser.add_argument('--save_folder', default='eval/', type=str,
                     help='File path to save results')
 parser.add_argument('--confidence_threshold', default=0.01, type=float,
                     help='Detection confidence threshold')
-parser.add_argument('--top_k', default=5, type=int,
+parser.add_argument('--top_k', default=200, type=int,
                     help='Further restrict the number of predictions to parse')
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use cuda to train model')
@@ -491,23 +493,22 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
                     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
+            # heat map
+            heat_data = np.zeros((512, 512))
+            num_box = cls_dets.shape[0]
+            for each_box_index in range(num_box):
+                each_box = cls_dets[each_box_index]
+                x_1 = int(each_box[0] + 0.5)
+                y_1 = int(each_box[1] + 0.5)
+                x_2 = int(each_box[2] + 0.5)
+                y_2 = int(each_box[3] + 0.5)
+                heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
+            cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+            sns.heatmap(heat_data, vmin=0, vmax=1)
+            plt.show()
+
             ## set all_boxes[j][i] = cls_dets
             all_boxes[j][i] = cls_dets
-
-            # if args.debug:
-            #     cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-            #     cv2.imwrite('test/test.jpg', img_original, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-            #     if args.only_best_pred: # flag: only draw the best pred box
-            #         num_draw_box = 1
-            #     else:
-            #         num_draw_box = boxes.shape[0]
-            #     for k in range(num_draw_box):
-            #         if args.pred_threshold < scores[k]: # set threshold for draw boxes
-            #             point_left_up = (int(boxes[k, 0]), int(boxes[k, 1]))
-            #             point_right_down = (int(boxes[k, 2]), int(boxes[k, 3]))
-            #             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-            #             cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
-            #             print(scores[k])
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time), end='', flush=True)
