@@ -184,8 +184,6 @@ def write_voc_results_file(all_boxes, dataset):
 def do_python_eval(output_dir='output', use_07=True):
     cachedir = os.path.join(devkit_path, 'annotations_cache')
     aps = []
-    recs = []
-    precs = []
     # The PASCAL VOC metric changed in 2010
     use_07_metric = use_07
     print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
@@ -193,23 +191,23 @@ def do_python_eval(output_dir='output', use_07=True):
         os.mkdir(output_dir)
     for i, cls in enumerate(labelmap): # labelmap只有nodule
         filename = get_voc_results_file_template(set_type, cls)
-        rec, prec, ap = voc_eval(
+        rec, prec, ap, recall, precision = voc_eval(
            filename, annopath, imgsetpath.format(set_type), cls, cachedir,
            ovthresh=0.5, use_07_metric=use_07_metric)
+
         aps += [ap]
-        recs += [rec]
-        precs += [prec]
         print('AP for {} = {:.4f}'.format(cls, ap))
         with open(os.path.join(output_dir, cls + '_pr.pkl'), 'wb') as f:
             pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
-    print('Mean AP = {:.4f}'.format(np.mean(aps)))
-    print('Average Recall = {:.4f}'.format(np.mean(recs)))
-    print('Average Precision = {:.4f}'.format(np.mean(precs)))
+
+    # print('Mean AP = {:.4f}'.format(np.mean(aps)))
+    print('Recall = {:.4f}'.format(recall))
+    print('Precision = {:.4f}'.format(precision))
     print('~~~~~~~~')
     print('Results:')
     for ap in aps:
         print('{:.3f}'.format(ap))
-    print('{:.3f}'.format(np.mean(aps)))
+    # print('{:.3f}'.format(np.mean(aps)))
     print('~~~~~~~~')
     print('')
     print('--------------------------------------------------------------')
@@ -319,6 +317,10 @@ cachedir: Directory for caching the annotations
                                  'difficult': difficult,
                                  'det': det}
 
+    num_positive = 0
+    for each_class_recs in class_recs:
+        num_positive = num_positive + class_recs[each_class_recs]['bbox'].shape[0]
+
     # read dets
     detfile = detpath.format(classname)
     with open(detfile, 'r') as f:
@@ -385,7 +387,12 @@ cachedir: Directory for caching the annotations
         prec = -1.
         ap = -1.
 
-    return rec, prec, ap
+    count_tp = max(tp)
+    count_fp = max(fp)
+    recall = count_tp / (num_positive)
+    precision = count_tp / (count_tp + count_fp)
+
+    return rec, prec, ap, recall, precision
 
 
 def test_net(save_folder, net, cuda, dataset, transform, top_k,
