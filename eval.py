@@ -191,7 +191,7 @@ def do_python_eval(output_dir='output', use_07=True):
     print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
-    for i, cls in enumerate(labelmap):
+    for i, cls in enumerate(labelmap): # labelmap只有nodule
         filename = get_voc_results_file_template(set_type, cls)
         rec, prec, ap = voc_eval(
            filename, annopath, imgsetpath.format(set_type), cls, cachedir,
@@ -549,7 +549,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             heat_data_average = heat_data_average + each_heat_data
         heat_data_average = heat_data_average / len(list_heat_map)
         sns.heatmap(heat_data_average, vmin=0, vmax=1)
-        plt.show()
+        # plt.show()
 
         ## set all_boxes[j][i] = cls_dets
         all_boxes[j][i] = cls_dets
