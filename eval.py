@@ -518,11 +518,15 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                             y_1 = int(each_box[1] + 0.5)
                             x_2 = int(each_box[2] + 0.5)
                             y_2 = int(each_box[3] + 0.5)
-
                             point_left_up = (x_1, y_1)
                             point_right_down = (x_2, y_2)
                             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                            cv2.imwrite('test/test.png', img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+                        point_left_up_gt = (gt_x_1, gt_y_1)
+                        point_right_down_gt = (gt_x_2, gt_y_2)
+                        cv2.rectangle(img_original, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)
+                        cv2.imwrite('test/test_boxes_{}_{}.png'.format(each_context, each_range),
+                            img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
                     # heat map
                     heat_data = np.zeros((512, 512))
@@ -535,39 +539,26 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         y_2 = int(each_box[3] + 0.5)
 
                         heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
-                        point_left_up = (x_1, y_1)
-                        point_right_down = (x_2, y_2)
-                        cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-
-                        point_left_up_gt = (gt_x_1, gt_y_1)
-                        point_right_down_gt = (gt_x_2, gt_y_2)
-                        cv2.rectangle(img_original, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)     
-
-                    cv2.imwrite('test/{}_{}.png'.format(each_context, each_range), img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                    # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
+                    sns.heatmap(heat_data, vmin=0, vmax=1, cbar=False)
+                    plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
+                    plt.close()
 
                     if each_context == '' or each_context == 'd':
                         list_heat_map.append(heat_data)
                     elif each_context == 'u':
                         list_heat_map.insert(0, heat_data)
 
-                    # sns.heatmap(heat_data, vmin=0, vmax=1)
-                    # plt.show()
                 if each_context == '':
                     break
-
-        # check heatmap
-        # for each_heat_data in list_heat_map:
-        #     sns.heatmap(each_heat_data, vmin=0, vmax=1)
-        #     plt.show()
 
         # get average heatmap
         heat_data_average = np.zeros((512, 512))
         for each_heat_data in list_heat_map:
             heat_data_average = heat_data_average + each_heat_data
         heat_data_average = heat_data_average / len(list_heat_map)
-        sns.heatmap(heat_data_average, vmin=0, vmax=1)
-        # plt.show()
-        plt.savefig('test/heatmap.png')
+        sns.heatmap(heat_data_average, vmin=0, vmax=1, cmap='YlGnBu', cbar=False)
+        plt.savefig('test/heatmap_average.png')
         plt.close()
 
         ## set all_boxes[j][i] = cls_dets
