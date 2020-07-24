@@ -539,15 +539,17 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         y_2 = int(each_box[3] + 0.5)
 
                         heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
-                    # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
-                    sns.heatmap(heat_data, vmin=0, vmax=1)
-                    plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
-                    plt.close()
 
                     if each_context == '' or each_context == 'd':
                         list_heat_map.append(heat_data)
                     elif each_context == 'u':
                         list_heat_map.insert(0, heat_data)
+
+                    if args.debug:
+                        # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
+                        sns.heatmap(heat_data, vmin=0, vmax=1)
+                        plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
+                        plt.close()
 
                 if each_context == '':
                     break
@@ -557,9 +559,11 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         for each_heat_data in list_heat_map:
             heat_data_average = heat_data_average + each_heat_data
         heat_data_average = heat_data_average / len(list_heat_map)
-        sns.heatmap(heat_data_average, vmin=0, vmax=1, cmap='YlGnBu', cbar=False)
-        plt.savefig('test/heatmap_average.png')
-        plt.close()
+
+        if args.debug:
+            sns.heatmap(heat_data_average, vmin=0, vmax=1)
+            plt.savefig('test/heatmap_average.png')
+            plt.close()
 
         ## set all_boxes[j][i] = cls_dets
         all_boxes[j][i] = cls_dets
