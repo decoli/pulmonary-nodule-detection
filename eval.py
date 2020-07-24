@@ -420,10 +420,16 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         index, img_name, img_original, im, gt, h, w = dataset.pull_item(i)
         list_heat_map = []
 
-        gt_x_1 = int(gt[0][0] * 512)
-        gt_y_1 = int(gt[0][1] * 512)
-        gt_x_2 = int(gt[0][2] * 512)
-        gt_y_2 = int(gt[0][3] * 512)
+        num_gt = gt.shape[0]
+        list_gt_x_1 = []
+        list_gt_y_1 = []
+        list_gt_x_2 = []
+        list_gt_y_2 = []
+        for gt_index in range(num_gt):
+            list_gt_x_1.append(int(gt[gt_index][0] * 512))
+            list_gt_y_1.append(int(gt[gt_index][1] * 512))
+            list_gt_x_2.append(int(gt[gt_index][2] * 512))
+            list_gt_y_2.append(int(gt[gt_index][3] * 512))
 
         for each_context in context_list:
             for each_range in range(1, img_range+1):
@@ -522,11 +528,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                             point_right_down = (x_2, y_2)
                             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
 
-                        point_left_up_gt = (gt_x_1, gt_y_1)
-                        point_right_down_gt = (gt_x_2, gt_y_2)
-                        cv2.rectangle(img_original, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)
-                        cv2.imwrite('test/test_boxes_{}_{}.png'.format(each_context, each_range),
-                            img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+                        for each_gt_x_1, each_gt_y_1, each_gt_x_2, each_gt_y_2, in zip(list_gt_x_1, list_gt_y_1, list_gt_x_2, list_gt_y_2):
+                            point_left_up_gt = (each_gt_x_1, each_gt_y_1)
+                            point_right_down_gt = (each_gt_x_2, each_gt_y_2)
+                            cv2.rectangle(img_original, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)
+                            cv2.imwrite('test/test_boxes_{}_{}.png'.format(each_context, each_range),
+                                img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
                     # heat map
                     heat_data = np.zeros((512, 512))
@@ -550,6 +557,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         sns.heatmap(heat_data, vmin=0, vmax=1)
                         plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
                         plt.close()
+                        print(img_name)
 
                 if each_context == '':
                     break
