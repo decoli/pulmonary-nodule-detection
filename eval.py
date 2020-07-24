@@ -420,6 +420,11 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         index, img_name, img_original, im, gt, h, w = dataset.pull_item(i)
         list_heat_map = []
 
+        gt_x_1 = int(gt[0][0] * 512)
+        gt_y_1 = int(gt[0][1] * 512)
+        gt_x_2 = int(gt[0][2] * 512)
+        gt_y_2 = int(gt[0][3] * 512)
+
         for each_context in context_list:
             for each_range in range(1, img_range+1):
 
@@ -533,7 +538,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         point_left_up = (x_1, y_1)
                         point_right_down = (x_2, y_2)
                         cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
-                    cv2.imwrite('test/{}_{}_{}.png'.format(img_name, each_context, each_range), img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+                        point_left_up_gt = (gt_x_1, gt_y_1)
+                        point_right_down_gt = (gt_x_2, gt_y_2)
+                        cv2.rectangle(img_original, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)     
+
+                    cv2.imwrite('test/{}_{}.png'.format(each_context, each_range), img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
                     if each_context == '' or each_context == 'd':
                         list_heat_map.append(heat_data)
@@ -557,6 +567,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         heat_data_average = heat_data_average / len(list_heat_map)
         sns.heatmap(heat_data_average, vmin=0, vmax=1)
         # plt.show()
+        plt.savefig('test/heatmap.png')
+        plt.close()
 
         ## set all_boxes[j][i] = cls_dets
         all_boxes[j][i] = cls_dets
