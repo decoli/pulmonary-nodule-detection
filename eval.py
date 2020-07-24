@@ -554,6 +554,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
                     if args.debug:
                         # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
+                        print('max heat: {}'.format(np.max(heat_data)))
                         sns.heatmap(heat_data, vmin=0, vmax=1)
                         plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
                         plt.close()
@@ -569,6 +570,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         heat_data_average = heat_data_average / len(list_heat_map)
 
         if args.debug:
+            print('max heart average: {}'.format(np.max(heat_data_average)))
             sns.heatmap(heat_data_average, vmin=0, vmax=1)
             plt.savefig('test/heatmap_average.png')
             plt.close()
