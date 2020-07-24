@@ -540,7 +540,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
                         heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
                     # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
-                    sns.heatmap(heat_data, vmin=0, vmax=1, cbar=False)
+                    sns.heatmap(heat_data, vmin=0, vmax=1)
                     plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
                     plt.close()
 
