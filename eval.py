@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import argparse
+import csv
 import os
 import pickle
 import sys
@@ -180,6 +181,13 @@ def write_voc_results_file(all_boxes, dataset):
                                    dets[k, 0] + 1, dets[k, 1] + 1,
                                    dets[k, 2] + 1, dets[k, 3] + 1))
 
+def write_csv(name_model, ap, recall, precision):
+    f = open('performance.csv','a')
+    csv_writer = csv.writer(f)
+    list_performance = [name_model, ap, recall, precision]
+    csv_writer.writerow(['name', 'ap', 'recall', 'precision'])
+    csv_writer.writerow(list_performance)
+    f.close()
 
 def do_python_eval(output_dir='output', use_07=True):
     cachedir = os.path.join(devkit_path, 'annotations_cache')
@@ -214,7 +222,7 @@ def do_python_eval(output_dir='output', use_07=True):
     print('Results computed with the **unofficial** Python eval code.')
     print('Results should be very close to the official MATLAB eval code.')
     print('--------------------------------------------------------------')
-
+    write_csv(name_name, ap, recall, precision)
 
 def voc_ap(rec, prec, use_07_metric=True):
     """ ap = voc_ap(rec, prec, [use_07_metric])
