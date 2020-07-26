@@ -427,6 +427,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
     for i in range(0, num_images):
         index, img_name, img_original, im, gt, h, w = dataset.pull_item(i)
         list_heat_map = []
+        list_heat_map_weighted = []
 
         num_gt = gt.shape[0]
         list_gt_x_1 = []
@@ -560,6 +561,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     elif each_context == 'u':
                         list_heat_map.insert(0, heat_data)
 
+                    if each_context in ['d', 'u']:
+                        weighted = (3 - each_range) / 3
+                    elif each_context == '':
+                        weighted = 1
+                    list_heat_map_weighted.append(heat_data * weighted)
+
                     if args.debug:
                         # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
                         print('max heat: {}'.format(np.max(heat_data)))
@@ -576,11 +583,21 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         for each_heat_data in list_heat_map:
             heat_data_average = heat_data_average + each_heat_data
         heat_data_average = heat_data_average / len(list_heat_map)
-
         if args.debug:
             print('max heart average: {}'.format(np.max(heat_data_average)))
             sns.heatmap(heat_data_average, vmin=0, vmax=1)
             plt.savefig('test/heatmap_average.png')
+            plt.close()
+
+        # get weighted heatmap
+        heat_data_weighted = np.zeros((512, 512))
+        for each_heat_data_weighted in list_heat_map_weighted:
+            heat_data_weighted = heat_data_weighted + each_heat_data_weighted
+        heat_data_weighted = heat_data_weighted / 3
+        if args.debug:
+            print('max heart weighted: {}'.format(np.max(heat_data_weighted)))
+            sns.heatmap(heat_data_weighted, vmin=0, vmax=1)
+            plt.savefig('test/heatmap_weighted.png')
             plt.close()
 
         ## set all_boxes[j][i] = cls_dets
