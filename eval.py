@@ -182,7 +182,7 @@ def write_voc_results_file(all_boxes, dataset):
                                    dets[k, 2] + 1, dets[k, 3] + 1))
 
 def write_csv(name_model, ap, recall, precision):
-    f = open('performance.csv','a')
+    f = open('performance.csv','a', newline='')
     csv_writer = csv.writer(f)
     list_performance = [name_model, ap, recall, precision]
     csv_writer.writerow(['name', 'ap', 'recall', 'precision'])
