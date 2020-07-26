@@ -9,8 +9,8 @@ args = parser.parse_args()
 start_iter = args.start_iter
 
 while True:
-    path_weights = '.\weights\ssd_luna16_{start_iter}'.format(
-        start_iter=start_iter))
+    path_weights = '.\weights\ssd_luna16_{start_iter}.pth'.format(
+        start_iter=start_iter)
     if not os.path.exists(path_weights):
         break
 
