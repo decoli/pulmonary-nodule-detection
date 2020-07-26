@@ -189,7 +189,7 @@ def write_csv(name_model, ap, recall, precision):
     csv_writer.writerow(list_performance)
     f.close()
 
-def do_python_eval(output_dir='output', use_07=True):
+def do_python_eval(output_dir='output', use_07=False):
     cachedir = os.path.join(devkit_path, 'annotations_cache')
     aps = []
     # The PASCAL VOC metric changed in 2010
