@@ -618,13 +618,27 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             y_2 = int(cls_dets[index_det][3] + 0.5)
 
             image_box = heat_data_weighted[y_1: y_2, x_1: x_2]
-            sns.heatmap(image_box, vmin=0, vmax=1)
-            plt.savefig('test/test_heat_box.png')
-            plt.close()
+            # sns.heatmap(image_box, vmin=0, vmax=1)
+            # plt.savefig('test/test_heat_box.png')
+            # plt.close()
 
             image_box_average = np.mean(image_box)
             cls_dets[index_det][4] = image_box_average
 
+        ##
+        heat_all_boxes = np.zeros((512, 512))
+        for index_det in range(num_det):
+            x_1 = int(cls_dets[index_det][0] + 0.5)
+            y_1 = int(cls_dets[index_det][1] + 0.5)
+            x_2 = int(cls_dets[index_det][2] + 0.5)
+            y_2 = int(cls_dets[index_det][3] + 0.5)
+
+            heat_all_boxes[y_1: y_2, x_1: x_2] = heat_all_boxes[y_1: y_2, x_1: x_2] + cls_dets[index_det][4]
+        sns.heatmap(heat_all_boxes, vmin=0, vmax=1)
+        plt.savefig('test/heatmap_all_boxes.png')
+        plt.close()
+
+        #
         all_boxes[j][i] = cls_dets
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
