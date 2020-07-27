@@ -474,7 +474,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     # clean up the dets
                     ## nms
                     num_box = boxes.shape[0]
-                    keep = py_cpu_nms(boxes.numpy(), scores)
+                    keep = py_cpu_nms(boxes.cpu().numpy(), scores)
                     list_clean_up = []
                     for index_clean in range(num_box):
                         if not index_clean in keep:
