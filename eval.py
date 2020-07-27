@@ -472,25 +472,6 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                         scores[:, np.newaxis])).astype(np.float32,
                                                                         copy=False)
                     # clean up the dets
-                    ## nms
-                    num_box = boxes.shape[0]
-                    keep = py_cpu_nms(boxes.cpu().numpy(), scores)
-                    list_clean_up = []
-                    for index_clean in range(num_box):
-                        if not index_clean in keep:
-                            list_clean_up.append(index_clean)
-                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
-
-
-                    ## set thresh
-                    num_box = cls_dets.shape[0]
-                    list_clean_up = []
-                    for each_box_index in range(num_box):
-                        each_box = cls_dets[each_box_index]
-                        if each_box[4] < thresh:
-                            list_clean_up.append(each_box_index)
-                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
-
                     ## clean up background boxes
                     num_box = cls_dets.shape[0]
                     list_clean_up = []
@@ -520,12 +501,35 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                             list_clean_up.append(each_box_index)
 
                     cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
-                
-                    ## top-k
-                    list_clean_up = list(range(cls_dets.shape[0]))
-                    del(list_clean_up[0: top_k])
-                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
+
+                    ## nms
+                    # num_box = boxes.shape[0]
+                    # keep = py_cpu_nms(boxes.cpu().numpy(), scores)
+                    # list_clean_up = []
+                    # for index_clean in range(num_box):
+                    #     if not index_clean in keep:
+                    #         list_clean_up.append(index_clean)
+                    # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+
+                    ## top-k
+                    # list_clean_up = list(range(cls_dets.shape[0]))
+                    # del(list_clean_up[0: top_k])
+                    # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+
+                    ## set thresh
+                    # num_box = cls_dets.shape[0]
+                    # list_clean_up = []
+                    # for each_box_index in range(num_box):
+                    #     each_box = cls_dets[each_box_index]
+                    #     if each_box[4] < thresh:
+                    #         list_clean_up.append(each_box_index)
+                    # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+
+                    if each_context == '':
+                        cls_dets_center = cls_dets
                     # show cleaned boxes
                     if args.debug:
                         num_box = cls_dets.shape[0]
@@ -570,6 +574,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         weighted = 1
                     list_heat_map_weighted.append(heat_data * weighted)
 
+
                     if args.debug:
                         # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
                         print('max heat: {}'.format(np.max(heat_data)))
@@ -604,6 +609,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.close()
 
         ## set all_boxes[j][i] = cls_dets
+        cls_dets = cls_dets_center
         num_det = cls_dets.shape[0]
         for index_det in range(num_det):
             x_1 = int(cls_dets[index_det][0] + 0.5)
@@ -612,6 +618,12 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             y_2 = int(cls_dets[index_det][3] + 0.5)
 
             image_box = heat_data_weighted[y_1: y_2, x_1: x_2]
+            sns.heatmap(image_box, vmin=0, vmax=1)
+            plt.savefig('test/test_heat_box.png')
+            plt.close()
+
+            image_box_average = np.mean(image_box)
+            cls_dets[index_det][4] = image_box_average
 
         all_boxes[j][i] = cls_dets
 
