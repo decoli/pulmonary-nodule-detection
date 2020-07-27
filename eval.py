@@ -25,7 +25,7 @@ from torch.autograd import Variable
 
 from data import VOC_CLASSES as labelmap
 from data import VOC_ROOT, BaseTransform, VOCAnnotationTransform, VOCDetection
-from layers.box_utils import nms
+from layers.box_utils import nms, py_cpu_nms
 from ssd import build_ssd
 
 if sys.version_info[0] == 2:
@@ -473,11 +473,14 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                                                         copy=False)
                     # clean up the dets
                     ## nms
-                    # keep, count = nms(torch.Tensor(boxes), torch.Tensor(scores), top_k=10)
+                    num_box = boxes.shape[0]
+                    keep = py_cpu_nms(boxes.numpy(), scores)
+                    list_clean_up = []
+                    for index_clean in range(num_box):
+                        if not index_clean in keep:
+                            list_clean_up.append(index_clean)
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
-                    # list_keep = list(np.array(keep))
-                    # if not keep.size(0) == count:
-                    #     print('')
 
                     ## set thresh
                     num_box = cls_dets.shape[0]
@@ -601,6 +604,15 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.close()
 
         ## set all_boxes[j][i] = cls_dets
+        num_det = cls_dets.shape[0]
+        for index_det in range(num_det):
+            x_1 = int(cls_dets[index_det][0] + 0.5)
+            y_1 = int(cls_dets[index_det][1] + 0.5)
+            x_2 = int(cls_dets[index_det][2] + 0.5)
+            y_2 = int(cls_dets[index_det][3] + 0.5)
+
+            image_box = heat_data_weighted[y_1: y_2, x_1: x_2]
+
         all_boxes[j][i] = cls_dets
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
