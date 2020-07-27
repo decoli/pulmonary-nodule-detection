@@ -243,7 +243,7 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         idx = idx[IoU.le(overlap)]
     return keep, count
 
-def py_cpu_nms(dets, scores, thresh=0.1):
+def py_cpu_nms(dets, scores, thresh=0.5):
     """Pure Python NMS baseline."""
     x1 = dets[:, 0]
     y1 = dets[:, 1]
