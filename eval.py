@@ -601,6 +601,10 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 if each_context == '':
                     break
 
+        # sort cls_dets_all
+        sort_index = np.argsort(cls_dets_all[:,4])[::-1]
+        cls_dets_all = cls_dets_all[sort_index]
+
         # get average heatmap
         heat_data_average = np.zeros((512, 512))
         for each_heat_data in list_heat_map:
@@ -633,7 +637,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
         # soft nms
-        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.5)
+        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.1)
         cls_dets_all = cls_dets_all.cpu().numpy()
 
         # show all range cls_dets
