@@ -4,6 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Run eval.py')
 parser.add_argument('--start_iter', required=True, type=int, help='set the iter of loop startting.')
+parser.add_argument('--range', required=True, type=int, help='set the range value.')
 args = parser.parse_args()
 
 start_iter = args.start_iter
