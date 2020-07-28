@@ -26,7 +26,7 @@ from torch.autograd import Variable
 
 from data import VOC_CLASSES as labelmap
 from data import VOC_ROOT, BaseTransform, VOCAnnotationTransform, VOCDetection
-from layers.box_utils import nms, py_cpu_nms
+from layers.box_utils import nms, py_cpu_nms, soft_nms
 from ssd import build_ssd
 
 if sys.version_info[0] == 2:
@@ -623,17 +623,20 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.savefig('test/heatmap_weighted.png')
             plt.close()
 
-        # show all range cls_dets
-
         ## nms
-        num_box = cls_dets_all.shape[0]
-        keep = py_cpu_nms(cls_dets_all)
-        list_clean_up = []
-        for index_clean in range(num_box):
-            if not index_clean in keep:
-                list_clean_up.append(index_clean)
-        cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
+        # num_box = cls_dets_all.shape[0]
+        # keep = py_cpu_nms(cls_dets_all)
+        # list_clean_up = []
+        # for index_clean in range(num_box):
+        #     if not index_clean in keep:
+        #         list_clean_up.append(index_clean)
+        # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
+        # soft nms
+        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.01)
+        cls_dets_all = cls_dets_all.cpu().numpy()
+
+        # show all range cls_dets
         num_box = cls_dets_all.shape[0]
         for each_box_index in range(num_box):
             each_box = cls_dets_all[each_box_index]
