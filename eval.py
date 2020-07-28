@@ -542,7 +542,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         flag_cls_dets_all = False
                         
                     else:
-                        cls_dets[:, 4] = cls_dets[:, 4] / 3 * (3 - each_range)
+                        # cls_dets[:, 4] = cls_dets[:, 4] / 3 * (3 - each_range)
                         cls_dets_all = np.concatenate((cls_dets_all, cls_dets), axis=0)
 
                     # show cleaned boxes
@@ -633,7 +633,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
         # soft nms
-        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.01)
+        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.5)
         cls_dets_all = cls_dets_all.cpu().numpy()
 
         # show all range cls_dets
