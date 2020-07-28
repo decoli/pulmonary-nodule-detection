@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import argparse
+import copy
 import csv
 import os
 import pickle
@@ -440,12 +441,15 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             list_gt_x_2.append(int(gt[gt_index][2] * 512))
             list_gt_y_2.append(int(gt[gt_index][3] * 512))
 
+        cls_dets_all = None
+        flag_cls_dets_all = True
         for each_context in context_list:
             for each_range in range(1, img_range+1):
 
                 if not each_context == '':
                     img_name_range = '{}_{}_{}.png'.format(img_name, each_context, each_range)
                     img_original, im, h, w = dataset.pull_item_eval(index, img_name, img_name_range)
+                    img_original_center = copy.deepcopy(img_original)
 
                 x = Variable(im.unsqueeze(0))
                 if args.cuda and torch.cuda.is_available():
@@ -502,7 +506,6 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
                     cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
-
                     ## nms
                     # num_box = boxes.shape[0]
                     # keep = py_cpu_nms(boxes.cpu().numpy(), scores)
@@ -528,8 +531,17 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     #         list_clean_up.append(each_box_index)
                     # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
-                    if each_context == '':
-                        cls_dets_center = cls_dets
+                    # if each_context == '':
+                    #     cls_dets_center = cls_dets
+
+                    # stock cls_dets
+                    if flag_cls_dets_all:
+                        cls_dets_all = cls_dets
+                        flag_cls_dets_all = False
+                        
+                    else:
+                        cls_dets_all = np.concatenate((cls_dets_all, cls_dets), axis=0)
+
                     # show cleaned boxes
                     if args.debug:
                         num_box = cls_dets.shape[0]
@@ -608,35 +620,77 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.savefig('test/heatmap_weighted.png')
             plt.close()
 
-        ## set all_boxes[j][i] = cls_dets
-        cls_dets = cls_dets_center
-        num_det = cls_dets.shape[0]
+        # show all range cls_dets
+
+        ## nms
+        num_box = cls_dets_all.shape[0]
+        keep = py_cpu_nms(cls_dets_all)
+        list_clean_up = []
+        for index_clean in range(num_box):
+            if not index_clean in keep:
+                list_clean_up.append(index_clean)
+        cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
+
+        num_box = cls_dets_all.shape[0]
+        for each_box_index in range(num_box):
+            each_box = cls_dets_all[each_box_index]
+
+            x_1 = int(each_box[0] + 0.5)
+            y_1 = int(each_box[1] + 0.5)
+            x_2 = int(each_box[2] + 0.5)
+            y_2 = int(each_box[3] + 0.5)
+            point_left_up = (x_1, y_1)
+            point_right_down = (x_2, y_2)
+            cv2.rectangle(img_original_center, point_left_up, point_right_down, (0, 0, 255), 1)
+
+        for each_gt_x_1, each_gt_y_1, each_gt_x_2, each_gt_y_2, in zip(list_gt_x_1, list_gt_y_1, list_gt_x_2, list_gt_y_2):
+            point_left_up_gt = (each_gt_x_1, each_gt_y_1)
+            point_right_down_gt = (each_gt_x_2, each_gt_y_2)
+            cv2.rectangle(img_original_center, point_left_up_gt, point_right_down_gt, (0, 255, 0), 1)
+            cv2.imwrite('test/test_boxes_all.png', img_original_center, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
+
+        num_det = cls_dets_all.shape[0]
+        heatmap_cls_dets_all = np.zeros((512, 512))
         for index_det in range(num_det):
-            x_1 = int(cls_dets[index_det][0] + 0.5)
-            y_1 = int(cls_dets[index_det][1] + 0.5)
-            x_2 = int(cls_dets[index_det][2] + 0.5)
-            y_2 = int(cls_dets[index_det][3] + 0.5)
+            x_1 = int(cls_dets_all[index_det][0] + 0.5)
+            y_1 = int(cls_dets_all[index_det][1] + 0.5)
+            x_2 = int(cls_dets_all[index_det][2] + 0.5)
+            y_2 = int(cls_dets_all[index_det][3] + 0.5)
 
-            image_box = heat_data_weighted[y_1: y_2, x_1: x_2]
-            # sns.heatmap(image_box, vmin=0, vmax=1)
-            # plt.savefig('test/test_heat_box.png')
-            # plt.close()
-
-            image_box_average = np.mean(image_box)
-            cls_dets[index_det][4] = image_box_average
-
-        ##
-        heat_all_boxes = np.zeros((512, 512))
-        for index_det in range(num_det):
-            x_1 = int(cls_dets[index_det][0] + 0.5)
-            y_1 = int(cls_dets[index_det][1] + 0.5)
-            x_2 = int(cls_dets[index_det][2] + 0.5)
-            y_2 = int(cls_dets[index_det][3] + 0.5)
-
-            heat_all_boxes[y_1: y_2, x_1: x_2] = heat_all_boxes[y_1: y_2, x_1: x_2] + cls_dets[index_det][4]
-        sns.heatmap(heat_all_boxes, vmin=0, vmax=1)
-        plt.savefig('test/heatmap_all_boxes.png')
+            heatmap_cls_dets_all[y_1: y_2, x_1: x_2] = heatmap_cls_dets_all[y_1: y_2, x_1: x_2] + cls_dets_all[index_det][4]
+        sns.heatmap(heatmap_cls_dets_all, vmin=0, vmax=1)
+        plt.savefig('test/heatmap_cls_dets_all.png')
         plt.close()
+
+        ## set all_boxes[j][i] = cls_dets
+        # cls_dets = cls_dets_center
+        # num_det = cls_dets.shape[0]
+        # for index_det in range(num_det):
+        #     x_1 = int(cls_dets[index_det][0] + 0.5)
+        #     y_1 = int(cls_dets[index_det][1] + 0.5)
+        #     x_2 = int(cls_dets[index_det][2] + 0.5)
+        #     y_2 = int(cls_dets[index_det][3] + 0.5)
+
+        #     image_box = heat_data_weighted[y_1: y_2, x_1: x_2]
+        #     # sns.heatmap(image_box, vmin=0, vmax=1)
+        #     # plt.savefig('test/test_heat_box.png')
+        #     # plt.close()
+
+        #     image_box_average = np.mean(image_box)
+        #     cls_dets[index_det][4] = image_box_average
+
+        # ##
+        # heat_all_boxes = np.zeros((512, 512))
+        # for index_det in range(num_det):
+        #     x_1 = int(cls_dets[index_det][0] + 0.5)
+        #     y_1 = int(cls_dets[index_det][1] + 0.5)
+        #     x_2 = int(cls_dets[index_det][2] + 0.5)
+        #     y_2 = int(cls_dets[index_det][3] + 0.5)
+
+        #     heat_all_boxes[y_1: y_2, x_1: x_2] = heat_all_boxes[y_1: y_2, x_1: x_2] + cls_dets[index_det][4]
+        # sns.heatmap(heat_all_boxes, vmin=0, vmax=1)
+        # plt.savefig('test/heatmap_all_boxes.png')
+        # plt.close()
 
         #
         all_boxes[j][i] = cls_dets
