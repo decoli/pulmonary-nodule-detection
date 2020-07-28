@@ -449,6 +449,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                 if not each_context == '':
                     img_name_range = '{}_{}_{}.png'.format(img_name, each_context, each_range)
                     img_original, im, h, w = dataset.pull_item_eval(index, img_name, img_name_range)
+                    
+                if each_context == '':
                     img_original_center = copy.deepcopy(img_original)
 
                 x = Variable(im.unsqueeze(0))
@@ -540,6 +542,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         flag_cls_dets_all = False
                         
                     else:
+                        cls_dets[:, 4] = cls_dets[:, 4] / 3 * (3 - each_range)
                         cls_dets_all = np.concatenate((cls_dets_all, cls_dets), axis=0)
 
                     # show cleaned boxes
@@ -693,7 +696,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         # plt.close()
 
         #
-        all_boxes[j][i] = cls_dets
+        all_boxes[j][i] = cls_dets_all
 
         print('\rim_detect: {:d}/{:d} {:.3f}s'.format(i + 1,
                                                     num_images, detect_time), end='', flush=True)
