@@ -547,7 +547,10 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                         
                     else:
                         # cls_dets[:, 4] = cls_dets[:, 4] / 3 * (3 - each_range)
-                        cls_dets_all = np.concatenate((cls_dets_all, cls_dets), axis=0)
+                        try:
+                            cls_dets_all = np.concatenate((cls_dets_all, cls_dets), axis=0)
+                        except ValueError:
+                            pass
 
                     # show cleaned boxes
                     if args.debug:
