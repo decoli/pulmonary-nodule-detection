@@ -67,7 +67,7 @@ parser.add_argument('--pred_threshold',
                     type=float,
                     help='set the threshold of pred boxes to draw')
 parser.add_argument('--range',
-                    default=0,
+                    required=True,
                     type=int,
                     help='set the range value when eval.')
 
@@ -637,8 +637,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
         # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
         # soft nms
-        cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0.1)
-        cls_dets_all = cls_dets_all.cpu().numpy()
+        # cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0)
+        # cls_dets_all = cls_dets_all.cpu().numpy()
 
         # show all range cls_dets
         num_box = cls_dets_all.shape[0]

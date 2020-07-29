@@ -15,8 +15,9 @@ while True:
     if not os.path.exists(path_weights):
         break
 
-    command = 'python .\eval.py --trained_model {path_weights}'.format(
-        path_weights=path_weights)
+    command = 'python .\eval.py --trained_model {path_weights} --range {range}'.format(
+        path_weights=path_weights,
+        range=args.range)
     os.system(command)
 
     start_iter = start_iter + 500
