@@ -508,7 +508,7 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
                     cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
-                    ## nms
+                    ## hard nms
                     # num_box = boxes.shape[0]
                     # keep = py_cpu_nms(boxes.cpu().numpy(), scores)
                     # list_clean_up = []
@@ -517,6 +517,10 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                     #         list_clean_up.append(index_clean)
                     # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
+
+                    ## soft nms
+                    cls_dets = soft_nms(torch.Tensor(cls_dets), score_threshold=0)
+                    cls_dets = cls_dets.cpu().numpy()
 
                     ## top-k
                     # list_clean_up = list(range(cls_dets.shape[0]))
@@ -628,13 +632,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.close()
 
         ## nms
-        # num_box = cls_dets_all.shape[0]
-        # keep = py_cpu_nms(cls_dets_all)
-        # list_clean_up = []
-        # for index_clean in range(num_box):
-        #     if not index_clean in keep:
-        #         list_clean_up.append(index_clean)
-        # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
+        num_box = cls_dets_all.shape[0]
+        keep = py_cpu_nms(cls_dets_all)
+        list_clean_up = []
+        for index_clean in range(num_box):
+            if not index_clean in keep:
+                list_clean_up.append(index_clean)
+        cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
         # soft nms
         # cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0)
