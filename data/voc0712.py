@@ -142,7 +142,7 @@ class VOCDetection(data.Dataset):
 
 
     def __getitem__(self, index):
-        img_original, im, gt, h, w = self.pull_item(index)
+        _, __, img_original, im, gt, h, w = self.pull_item(index)
 
         return im, gt
 
