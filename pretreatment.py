@@ -67,6 +67,7 @@ def load_itk_image(filename):
     numpySpacing = np.array(list(itkimage.GetSpacing()))  # CT像素间隔
     return numpyImage, numpyOrigin, numpySpacing
 
+'''https://zhuanlan.zhihu.com/p/52559517'''
 def get_masked_image():
     if os.name == 'posix':
         working_path = '/Volumes/shirui_WD_2/lung_image/all_LUNA16/LUNA16'
