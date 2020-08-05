@@ -132,13 +132,19 @@ def get_masked_image():
                 thresh_img = np.where(img<threshold,1.0,0.0)  # threshold the image
 
                 # 聚类完成后，清晰可见偏黑色区域为一类，偏灰色区域为另一类。
+                if args.debug:
+                    cv2.imwrite('test/k_means.png', thresh_img * 255)
                 # image_array = thresh_img
                 # plt.imshow(image_array,cmap='gray') 
                 # plt.show()
 
                 eroded = morphology.erosion(thresh_img,np.ones([4,4]))  
                 dilation = morphology.dilation(eroded,np.ones([10,10]))  
-                labels = measure.label(dilation)   
+                labels = measure.label(dilation)
+
+                if args.debug:
+                    cv2.imwrite('test/eroded.png', eroded * 255)
+                    cv2.imwrite('test/dilation.png', dilation * 255)
                 # fig,ax = plt.subplots(2,2,figsize=[8,8])
                 # ax[0,0].imshow(thresh_img,cmap='gray')  
                 # ax[0,1].imshow(eroded,cmap='gray') 
@@ -181,16 +187,22 @@ def get_masked_image():
                 axes = fig.add_axes([0, 0, 1, 1])
                 axes.set_axis_off()
                 axes.imshow(img*mask, cmap='gray')
-
-                if context_type == '':
-                    path_img = os.path.join('data/LUNA16/masked/test/{:06d}.png'.format(count_image))
+                if not args.debug:
+                    if context_type == '':
+                        path_img = os.path.join('data/LUNA16/masked/test/{:06d}.png'.format(count_image))
+                    else:
+                        path_img = os.path.join('data/LUNA16/masked/test/{count_image:06d}_{context_type}_{context_num}.png'.format(
+                            count_image=count_image, context_type=context_type, context_num=context_num))
+                    fig.savefig(path_img)
+                    plt.close()
+                    if context_type == '':
+                        break
                 else:
-                    path_img = os.path.join('data/LUNA16/masked/test/{count_image:06d}_{context_type}_{context_num}.png'.format(
-                        count_image=count_image, context_type=context_type, context_num=context_num))
-                fig.savefig(path_img)
-                plt.close()
-                if context_type == '':
-                    break
+                    plt.savefig('test/masked_image.png')
+                    axes.imshow(img, cmap='gray')
+                    plt.savefig('test/original_image.png')
+                    # cv2.imwrite('test/masked_image.png', img*mask*255)
+
         count_image += 1
         print(count_image)
 
