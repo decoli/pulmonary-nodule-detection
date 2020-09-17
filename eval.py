@@ -519,23 +519,23 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
 
 
                     ## soft nms
-                    cls_dets = soft_nms(torch.Tensor(cls_dets), score_threshold=0)
-                    cls_dets = cls_dets.cpu().numpy()
+                    # cls_dets = soft_nms(torch.Tensor(cls_dets), score_threshold=0)
+                    # cls_dets = cls_dets.cpu().numpy()
 
                     ## top-k
-                    # list_clean_up = list(range(cls_dets.shape[0]))
-                    # del(list_clean_up[0: top_k])
-                    # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+                    list_clean_up = list(range(cls_dets.shape[0]))
+                    del(list_clean_up[0: top_k])
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
 
                     ## set thresh
-                    # num_box = cls_dets.shape[0]
-                    # list_clean_up = []
-                    # for each_box_index in range(num_box):
-                    #     each_box = cls_dets[each_box_index]
-                    #     if each_box[4] < thresh:
-                    #         list_clean_up.append(each_box_index)
-                    # cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
+                    num_box = cls_dets.shape[0]
+                    list_clean_up = []
+                    for each_box_index in range(num_box):
+                        each_box = cls_dets[each_box_index]
+                        if each_box[4] < thresh:
+                            list_clean_up.append(each_box_index)
+                    cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
 
                     # if each_context == '':
                     #     cls_dets_center = cls_dets
@@ -564,6 +564,11 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                             y_2 = int(each_box[3] + 0.5)
                             point_left_up = (x_1, y_1)
                             point_right_down = (x_2, y_2)
+
+                            print(each_box[4])
+                            lung_location = img_original[y_1: y_2, x_1: x_2, :]
+                            cv2.imwrite('test/test_lung_location_{}.png'.format(each_box_index), lung_location)
+
                             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
 
                         for each_gt_x_1, each_gt_y_1, each_gt_x_2, each_gt_y_2, in zip(list_gt_x_1, list_gt_y_1, list_gt_x_2, list_gt_y_2):
@@ -574,36 +579,36 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                                 img_original, [int(cv2.IMWRITE_PNG_COMPRESSION), 0])
 
                     # heat map
-                    heat_data = np.zeros((512, 512))
-                    num_box = cls_dets.shape[0]
-                    for each_box_index in range(num_box):
-                        each_box = cls_dets[each_box_index]
-                        x_1 = int(each_box[0] + 0.5)
-                        y_1 = int(each_box[1] + 0.5)
-                        x_2 = int(each_box[2] + 0.5)
-                        y_2 = int(each_box[3] + 0.5)
+                    # heat_data = np.zeros((512, 512))
+                    # num_box = cls_dets.shape[0]
+                    # for each_box_index in range(num_box):
+                    #     each_box = cls_dets[each_box_index]
+                    #     x_1 = int(each_box[0] + 0.5)
+                    #     y_1 = int(each_box[1] + 0.5)
+                    #     x_2 = int(each_box[2] + 0.5)
+                    #     y_2 = int(each_box[3] + 0.5)
 
-                        heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
+                    #     heat_data[y_1: y_2, x_1: x_2] = heat_data[y_1: y_2, x_1: x_2] + each_box[4]
 
-                    if each_context == '' or each_context == 'd':
-                        list_heat_map.append(heat_data)
-                    elif each_context == 'u':
-                        list_heat_map.insert(0, heat_data)
+                    # if each_context == '' or each_context == 'd':
+                    #     list_heat_map.append(heat_data)
+                    # elif each_context == 'u':
+                    #     list_heat_map.insert(0, heat_data)
 
-                    if each_context in ['d', 'u']:
-                        weighted = (3 - each_range) / 3
-                    elif each_context == '':
-                        weighted = 1
-                    list_heat_map_weighted.append(heat_data * weighted)
+                    # if each_context in ['d', 'u']:
+                    #     weighted = (3 - each_range) / 3
+                    # elif each_context == '':
+                    #     weighted = 1
+                    # list_heat_map_weighted.append(heat_data * weighted)
 
 
-                    if args.debug:
-                        # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
-                        print('max heat: {}'.format(np.max(heat_data)))
-                        sns.heatmap(heat_data, vmin=0, vmax=1)
-                        plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
-                        plt.close()
-                        print(img_name)
+                    # if args.debug:
+                    #     # sns.heatmap(heat_data, vmin=0, vmax=1, cmap='PuBuGn', cbar=False)
+                    #     print('max heat: {}'.format(np.max(heat_data)))
+                    #     sns.heatmap(heat_data, vmin=0, vmax=1)
+                    #     plt.savefig('test/heatmap_{}_{}.png'.format(each_context, each_range))
+                    #     plt.close()
+                    #     print(img_name)
 
                 if each_context == '':
                     break
@@ -635,13 +640,13 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
             plt.close()
 
         ## nms
-        num_box = cls_dets_all.shape[0]
-        keep = py_cpu_nms(cls_dets_all)
-        list_clean_up = []
-        for index_clean in range(num_box):
-            if not index_clean in keep:
-                list_clean_up.append(index_clean)
-        cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
+        # num_box = cls_dets_all.shape[0]
+        # keep = py_cpu_nms(cls_dets_all)
+        # list_clean_up = []
+        # for index_clean in range(num_box):
+        #     if not index_clean in keep:
+        #         list_clean_up.append(index_clean)
+        # cls_dets_all = np.delete(cls_dets_all, list_clean_up, axis=0)
 
         # soft nms
         # cls_dets_all = soft_nms(torch.Tensor(cls_dets_all), score_threshold=0)
