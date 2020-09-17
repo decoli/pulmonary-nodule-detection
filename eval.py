@@ -570,6 +570,8 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
                             cv2.imwrite('test/test_lung_location_{}.png'.format(each_box_index), lung_location)
 
                             cv2.rectangle(img_original, point_left_up, point_right_down, (0, 0, 255), 1)
+                            font = cv2.FONT_HERSHEY_SIMPLEX
+                            img_original = cv2.putText(img_original, ' {:.4f}'.format(each_box[4]), point_right_down, font, 0.4, (0, 0, 255))
 
                         for each_gt_x_1, each_gt_y_1, each_gt_x_2, each_gt_y_2, in zip(list_gt_x_1, list_gt_y_1, list_gt_x_2, list_gt_y_2):
                             point_left_up_gt = (each_gt_x_1, each_gt_y_1)
