@@ -391,6 +391,16 @@ cachedir: Directory for caching the annotations
         # ground truth
         prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
         ap = voc_ap(rec, prec, use_07_metric)
+
+        # save the rec and prec
+        with open('performance_rec.csv', 'w') as f:
+            f_csv = csv.writer(f)
+            f_csv.writerow(list(rec))
+
+        with open('performance_prec.csv', 'w') as f:
+            f_csv = csv.writer(f)
+            f_csv.writerow(list(prec))
+
     else:
         rec = -1.
         prec = -1.
